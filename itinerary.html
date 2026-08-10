@@ -87,6 +87,8 @@
   .times .a{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
   .times .b{font-size:13.5px; color:var(--tx3); font-variant-numeric:tabular-nums; margin-top:2px}
   .times .b::before{content:"↓ "; font-size:11px}
+  .times .a.lead{color:#c3b0ff}
+  .times .b.dep::before{content:"→ "}
   .body{flex:1; min-width:0}
   .route{font-size:16px; font-weight:620; letter-spacing:-.01em; word-break:break-word}
   .route .ar{color:var(--tx3); font-weight:400; margin:0 5px}
@@ -96,6 +98,7 @@
     padding:1px 6px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
   }
   .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
+  .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
   .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
   .links a{
@@ -286,6 +289,24 @@
   <label for="f_end" id="lblEnd">Arrives</label>
   <input id="f_end" type="datetime-local">
 
+  <div id="rowBoard" hidden>
+    <label for="f_therby">Be at the terminal by <span class="opt">(optional — governs when you must leave home)</span></label>
+    <input id="f_thereby" type="datetime-local">
+    <div class="quick" id="leadRow">
+      <button type="button" data-lead="180">−3h long-haul</button>
+      <button type="button" data-lead="150">−2h30 bag drop</button>
+      <button type="button" data-lead="120">−2h hand bag</button>
+      <button type="button" data-lead="90">−1h30 domestic</button>
+      <button type="button" data-lead="20">−20m train</button>
+    </div>
+    <div class="hint" id="leadHint"></div>
+
+    <label for="f_boardby">Gate closes / all aboard by <span class="opt">(optional — the last moment)</span></label>
+    <input id="f_boardby" type="datetime-local">
+    <label for="f_offat">Disembarking at <span class="opt">(optional — when you expect to be off)</span></label>
+    <input id="f_offat" type="datetime-local">
+  </div>
+
   <div id="rowAboard" hidden>
     <label for="f_aboard">All aboard by <span class="opt">(optional — assumes 30 min before sailing)</span></label>
     <input id="f_aboard" type="datetime-local">
@@ -355,7 +376,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.7";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -469,7 +490,15 @@ function isSpan(x, all){
   if(x.e - x.s >= DAY) return true;
   return all.some(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.s >= x.s && y.s <= x.e);
 }
-const encloses = (span, t) => t && span.s && span.e && t >= span.s && t <= span.e;
+// the time you act on, as against the time the vehicle moves
+const startOf = x => (x.l.kind === "move" ? (parse(x.l.thereBy) || parse(x.l.boardBy)) : null) || x.s;
+const endOf   = x => (x.l.kind === "move" && x.l.offAt   ? parse(x.l.offAt)   : null) || x.e;
+const spanFrom = s => { const a = startOf(s), b = s.s; return (a && b && a < b) ? a : b; };
+const spanTo   = s => { const a = endOf(s),   b = s.e; return (a && b && a > b) ? a : b; };
+const encloses = (span, t) => {
+  const a = spanFrom(span), b = spanTo(span);
+  return t && a && b && t >= a && t <= b;
+};
 
 // all-aboard: explicit if set, otherwise half an hour before the ship sails
 function aboardBy(port){
@@ -530,9 +559,12 @@ function render(){
       ? '<div class="lab">' + (pick === aboard ? "Aboard" : "In progress") + '</div><div class="rt">'+esc(titleOf(pick))+'</div>'+
         '<div class="mt">Until '+hhmm(pick.e)+(dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")+
         ' · '+dur(mins(pick.e-now))+' to go</div>'
-      : '<div class="lab">Next up</div><div class="rt">'+esc(titleOf(pick))+'</div><div class="mt">'+
-        (dayKey(pick.s)===dayKey(now) ? "Today at " : dayLabel(pick.s).split(" · ")[0]+" at ")+hhmm(pick.s)+
-        ' · in '+dur(mins(pick.s-now))+'</div>';
+      : (function(){
+          const w = startOf(pick);
+          return '<div class="lab">Next up</div><div class="rt">'+esc(titleOf(pick))+'</div><div class="mt">'+
+            (dayKey(w)===dayKey(now) ? "Today at " : dayLabel(w).split(" · ")[0]+" at ")+hhmm(w)+
+            ' · in '+dur(mins(w-now))+'</div>';
+        })();
   } else f.hidden = true;
 
   renderTotals();
@@ -541,16 +573,16 @@ function render(){
   const items = [];
   all.forEach(x => {
     if(spans.indexOf(x) > -1){
-      items.push({t:x.s, type:"board", x:x, span:x});
-      items.push({t:x.e, type:"disembark", x:x, span:x});
+      items.push({t:startOf(x), type:"board", x:x, span:x});
+      items.push({t:endOf(x),   type:"disembark", x:x, span:x});
     } else {
-      items.push({t:x.s || x.e, type:"entry", x:x, span:spanOf(x), port:portOf(x)});
+      items.push({t:startOf(x) || x.e, type:"entry", x:x, span:spanOf(x), port:portOf(x)});
     }
   });
   items.sort((a,b) => (!a.t && !b.t) ? 0 : !a.t ? 1 : !b.t ? -1 : a.t - b.t);
 
   /* ---- draw ---- */
-  let curDay = null, rail = null, prevMove = null, prevItem = null;
+  let curDay = null, rail = null, prevEnd = null, prevTo = "", prevItem = null;
   items.forEach(it => {
     const day = it.t ? dayKey(it.t) : "tbc";
 
@@ -583,20 +615,31 @@ function render(){
 
     if(it.type === "board" || it.type === "disembark"){
       rail = null;                       // board/disembark cap the rail, they don't sit in it
+      if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
+        const g = mins(it.t - prevEnd);
+        if(g < 0) list.appendChild(gapRow("clash", "⚠ You'd arrive " + dur(-g) + " after boarding closes"));
+        else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
+          (g < 45 ? "⚠ " : "") + dur(g) + " to board" + (g < 45 ? " — tight" : "")));
+      }
       list.appendChild(anchor(it, now));
-      prevMove = it.type === "disembark" ? it.x : prevMove;
+      if(it.type === "disembark"){ prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || ""; }
     } else if(it.x.l.kind === "port"){
       box().appendChild(portRow(it.x, now));
     } else {
       // connection warnings between consecutive journeys on the same day
       if(it.x.l.kind === "move" && !it.span){
-        if(prevMove && prevMove.e && it.t && dayKey(prevMove.e) === day){
-          const g = mins(it.t - prevMove.e);
-          if(g < 0) list.appendChild(gapRow("clash", "⚠ Overlaps the previous journey by " + dur(-g)));
+        if(prevEnd && it.t && dayKey(prevEnd) === day){
+          const g = mins(it.t - prevEnd);
+          const deadline = !!(it.x.l.thereBy || it.x.l.boardBy);
+          if(g < 0) list.appendChild(gapRow("clash", deadline
+            ? "⚠ You'd get there " + dur(-g) + " late"
+            : "⚠ Overlaps the previous journey by " + dur(-g)));
           else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
-            (g < 45 ? "⚠ " : "") + dur(g) + " in " + (prevMove.l.to || "between") + (g < 45 ? " — tight" : "")));
+            (g < 45 ? "⚠ " : "") + dur(g) +
+            (deadline ? " spare" : " in " + (prevTo || "between")) +
+            (g < 45 ? " — tight" : "")));
         }
-        prevMove = it.x;
+        prevEnd = endOf(it.x); prevTo = it.x.l.to || "";
       }
       const el = card(it.x, now);
       if(it.port) el.classList.add("nested");
@@ -635,7 +678,8 @@ function anchor(it, now){
   const el = document.createElement("div");
   el.className = "leg anchor" + (boarding ? " board" : " disembark") +
                  ((boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "");
-  const when = boarding ? x.s : x.e;
+  const when = it.t;
+  const shipTime = boarding ? x.s : x.e;
   const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
 
   let h = '<div class="times"><div class="a">'+(when?hhmm(when):"—")+'</div></div><div class="body">';
@@ -643,10 +687,18 @@ function anchor(it, now){
   h += '<div class="route">'+esc(where)+'</div>';
 
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
+  if(boarding && l.boardBy && l.thereBy){
+    const bb = parse(l.boardBy);
+    if(bb && hhmm(bb) !== hhmm(when)) bits.push('<span class="chip ship">all aboard '+hhmm(bb)+'</span>');
+  }
+  if(shipTime && when && hhmm(shipTime) !== hhmm(when)){
+    bits.push('<span class="chip ship">'+(boarding ? "sails " : "arrives ")+hhmm(shipTime)+'</span>');
+  }
   if(boarding){
     const c = parseFloat(l.cost);
     if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
-    if(x.s && x.e) bits.push('<span>'+dur(mins(x.e - x.s))+' aboard</span>');
+    const on = startOf(x), off = endOf(x);
+    if(on && off) bits.push('<span>'+dur(mins(off - on))+' aboard</span>');
     if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   } else {
     const roll = spanTotals(it.span);
@@ -719,8 +771,11 @@ function card(x, now){
   el.className = cls;
 
   const sameDay = x.s && x.e && dayKey(x.s) === dayKey(x.e);
-  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div>'+
-          ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')+
+  const lead = (!stop && l.kind === "move") ? (parse(l.thereBy) || null) : null;
+  let h = '<div class="times">' +
+          (lead ? '<div class="a lead">'+hhmm(lead)+'</div><div class="b dep">'+hhmm(x.s)+'</div>'
+                : '<div class="a">'+(x.s?hhmm(x.s):"—")+'</div>' +
+                  ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')) +
           '</div><div class="body">';
 
   h += '<div class="route">' + (stop
@@ -740,6 +795,7 @@ function card(x, now){
     const d = mins(x.e - x.s);
     if(d >= 0) bits.push('<span>'+dur(d)+'</span>');
   }
+  if(l.boardBy){ const bb = parse(l.boardBy); if(bb) bits.push('<span class="chip ship">gate '+hhmm(bb)+'</span>'); }
   if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   h += '<div class="meta">'+bits.join("")+'</div>';
 
@@ -769,6 +825,7 @@ function setKind(k){
   $("#f_place").placeholder = k === "port" ? "Lisbon" : "Hôtel Fabric, 31 rue de la Folie";
   $("#lblStart").textContent = k === "move" ? "Departs" : k === "port" ? "Ship arrives" : "Starts / check in";
   $("#lblEnd").textContent   = k === "move" ? "Arrives" : k === "port" ? "Ship sails"   : "Ends / check out";
+  $("#rowBoard").hidden = k !== "move";
   const types = k === "move" ? MOVE_TYPES : k === "port" ? PORT_TYPES : STOP_TYPES;
   const cur = $("#f_mode").value;
   $("#f_mode").innerHTML = types.map(t => '<option>'+t+'</option>').join("");
@@ -800,6 +857,10 @@ function openSheet(id){
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
   $("#f_aboard").value = l ? (l.aboard || "") : "";
+  $("#f_boardby").value = l ? (l.boardBy || "") : "";
+  $("#f_thereby").value = l ? (l.thereBy || "") : "";
+  showLead();
+  $("#f_offat").value   = l ? (l.offAt || "") : "";
   $("#f_ref").value   = l ? (l.ref || "") : "";
   $("#f_notes").value = l ? (l.notes || "") : "";
   $("#linkRows").innerHTML = "";
@@ -841,7 +902,10 @@ function collect(){
     start:$("#f_start").value, end:$("#f_end").value,
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
     ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
-    aboard: kind === "port" ? $("#f_aboard").value : ""
+    aboard: kind === "port" ? $("#f_aboard").value : "",
+    boardBy: kind === "move" ? $("#f_boardby").value : "",
+    thereBy: kind === "move" ? $("#f_thereby").value : "",
+    offAt:   kind === "move" ? $("#f_offat").value   : ""
   };
 }
 
@@ -918,6 +982,30 @@ $("#newTrip").addEventListener("click", () => {
 document.querySelectorAll("#kindSeg button").forEach(b =>
   b.addEventListener("click", () => setKind(b.dataset.kind)));
 
+function showLead(){
+  const dep = parse($("#f_start").value), there = parse($("#f_thereby").value);
+  const el = $("#leadHint");
+  if(dep && there){
+    const m = mins(dep - there);
+    el.textContent = m >= 0 ? "That's " + dur(m) + " before departure." : "That's after it leaves.";
+  } else {
+    el.textContent = "Tap a preset to set this from the departure time.";
+  }
+}
+document.querySelectorAll("#leadRow button").forEach(b => {
+  b.addEventListener("click", () => {
+    const dep = parse($("#f_start").value);
+    if(!dep){ toast("Set the departure time first"); return; }
+    const t = new Date(dep.getTime() - (+b.dataset.lead)*60000);
+    $("#f_thereby").value = t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate())+"T"+pad(t.getHours())+":"+pad(t.getMinutes());
+    showLead();
+  });
+});
+["input","change"].forEach(ev => {
+  $("#f_thereby").addEventListener(ev, showLead);
+  $("#f_start").addEventListener(ev, showLead);
+});
+
 ["input","change"].forEach(ev => {
   $("#f_start").addEventListener(ev, () => syncEnd(false));
   $("#f_end").addEventListener(ev, () => {
@@ -931,6 +1019,10 @@ function commit(){
   if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return false; }
   if(d.kind !== "move" && !d.place){ toast(d.kind === "port" ? "Name the port first" : "Add a place first"); return false; }
   if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return false; }
+  if(d.boardBy && d.start && d.boardBy > d.start){ toast("Boarding can't be after it departs"); return false; }
+  if(d.thereBy && d.start && d.thereBy > d.start){ toast("You'd get there after it leaves"); return false; }
+  if(d.thereBy && d.boardBy && d.thereBy > d.boardBy){ toast("You'd get there after the gate closes"); return false; }
+  if(d.offAt && d.end && d.offAt < d.end){ toast("You can't get off before it arrives"); return false; }
   if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
   else trip().legs.push(Object.assign({id:uid()}, d));
   save(); render();
