@@ -18,6 +18,7 @@
     --r:14px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  [hidden]{display:none !important}   /* our display:flex rules would otherwise beat the default */
   html,body{margin:0; padding:0; background:var(--bg); color:var(--tx)}
   body{
     font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
@@ -37,7 +38,7 @@
   #tripBtn .n{font-size:21px; font-weight:700; letter-spacing:-.02em; display:block;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #tripBtn .n::after{content:" ⌄"; color:var(--tx3); font-weight:400}
-  #tripSub{font-size:12.5px; color:var(--tx3); margin-top:2px}
+  #tripSub{font-size:12.5px; color:var(--tx3); margin-top:2px; display:block; line-height:1.35}
   .iconbtn{
     width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
     background:var(--bg2); color:var(--tx2); font-size:17px; line-height:1;
@@ -261,11 +262,15 @@
   <div id="linkRows"></div>
   <div class="quick">
     <button type="button" data-add="Wallet|shoebox://">+ Wallet pass</button>
-    <button type="button" data-add="Email|message://">+ Email</button>
+    <button type="button" data-add="Booking|https://">+ Booking</button>
     <button type="button" data-add="Map|https://maps.apple.com/?q=">+ Map</button>
     <button type="button" data-add="Link|https://">+ Other</button>
   </div>
-  <div class="hint"><b>Wallet:</b> <code>shoebox://</code> opens the Wallet app. <b>Email:</b> in Mail, share the message → Copy, then paste here. Any URL or app link works.</div>
+  <div class="hint">
+    <b>Booking:</b> long-press the “Manage my booking” link in your confirmation email → Copy, then paste it here.
+    <b>Wallet:</b> <code>shoebox://</code> opens the Wallet app — iOS has no link to one specific pass, so you pick it there.
+    iOS Mail can’t give you a link to an email itself.
+  </div>
 
   <label for="f_notes">Notes <span class="opt">(optional)</span></label>
   <textarea id="f_notes" placeholder="Check in 90 min before. Gate closes 20 min prior."></textarea>
@@ -367,12 +372,23 @@ function dayLabel(d){
 const mins = ms => Math.round(ms/60000);
 function dur(m){
   if(m < 1) return "0m";
-  const h = Math.floor(m/60), mm = m%60;
+  const d = Math.floor(m/1440), h = Math.floor((m%1440)/60), mm = m%60;
+  if(d) return d + "d" + (h ? " "+h+"h" : "");
   return (h? h+"h":"") + (h&&mm? " ":"") + (mm? mm+"m":"");
 }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const SYM = {GBP:"£", EUR:"€", USD:"$", CHF:"CHF "};
 const money = (n, c) => (SYM[c]||c+" ") + Number(n).toLocaleString("en-GB",{minimumFractionDigits:2, maximumFractionDigits:2});
+
+function totalsFor(t){
+  const by = {};
+  t.legs.forEach(l => {
+    const n = parseFloat(l.cost);
+    if(!isNaN(n) && n > 0){ const c = l.ccy || "GBP"; by[c] = (by[c]||0) + n; }
+  });
+  return by;
+}
+const totalsText = t => Object.keys(totalsFor(t)).map(c => money(totalsFor(t)[c], c));
 
 const MOVE_TYPES = ["Flight","Train","Coach","Bus","Ferry","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
@@ -394,13 +410,16 @@ function render(){
   const now = new Date();
 
   const dated = spans.filter(x => x.s);
+  const parts = [];
+  if(spans.length) parts.push(spans.length + (spans.length===1 ? " entry" : " entries"));
   if(dated.length){
     const fmt = d => d.toLocaleDateString("en-GB",{day:"numeric", month:"short"});
     const a = fmt(dated[0].s), b = fmt(dated[dated.length-1].s);
-    $("#tripSub").textContent = spans.length + (spans.length===1?" entry · ":" entries · ") + a + (a!==b ? " – "+b : "");
-  } else {
-    $("#tripSub").textContent = spans.length ? spans.length + " entries" : "Tap + to begin";
+    parts.push(a + (a!==b ? " – "+b : ""));
   }
+  const tot = totalsText(t);
+  if(tot.length) parts.push(tot.join(" · "));
+  $("#tripSub").textContent = parts.length ? parts.join(" · ") : "Tap + to begin";
 
   // focus: prefer journeys
   const moves = spans.filter(x => x.l.kind !== "stop");
@@ -454,22 +473,16 @@ function render(){
 }
 
 function renderTotals(){
-  const byC = {};
-  trip().legs.forEach(l => {
-    const n = parseFloat(l.cost);
-    if(!isNaN(n) && n > 0){ const c = l.ccy || "GBP"; byC[c] = (byC[c]||0) + n; }
-  });
+  const byC = totalsFor(trip());
   const keys = Object.keys(byC);
   const el = $("#totals");
-  if(!keys.length){ el.hidden = true; return; }
+  if(keys.length < 2){ el.hidden = true; return; }   // single currency already shown in the header
   el.hidden = false;
   let h = '<span class="k">Total booked</span>' +
           keys.map(c => '<span class="v">'+money(byC[c], c)+'</span>').join("");
-  if(keys.length > 1){
-    let gbp = 0, ok = true;
-    keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
-    if(ok) h += '<span class="approx">≈ '+money(gbp,"GBP")+' combined, at your saved rates</span>';
-  }
+  let gbp = 0, ok = true;
+  keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
+  if(ok) h += '<span class="approx">≈ '+money(gbp,"GBP")+' combined, at your saved rates</span>';
   el.innerHTML = h;
 }
 
@@ -563,7 +576,18 @@ function openSheet(id){
   $("#linkRows").innerHTML = "";
   ((l && l.links) || []).forEach(a => linkRow(a.label, a.url));
   $("#delBtn").hidden = !l;
+  syncEnd(true);
   show("#sheet");
+}
+
+// keep the arrival/checkout picker from offering anything before the departure
+function syncEnd(quiet){
+  const s = $("#f_start").value, e = $("#f_end");
+  e.min = s || "";
+  if(s && e.value && e.value < s){
+    e.value = "";
+    if(!quiet) toast("Cleared the end time — it was before the start");
+  }
 }
 
 function defaultStart(){
@@ -603,9 +627,7 @@ function renderTrips(){
   const box = $("#tripList"); box.innerHTML = "";
   store.trips.forEach(t => {
     const ds = t.legs.map(l => parse(l.start)).filter(Boolean).sort((a,b) => a-b);
-    const byC = {};
-    t.legs.forEach(l => { const n = parseFloat(l.cost); if(!isNaN(n) && n>0){ const c = l.ccy||"GBP"; byC[c] = (byC[c]||0)+n; }});
-    const totals = Object.keys(byC).map(c => money(byC[c], c)).join(" · ");
+    const totals = totalsText(t).join(" · ");
     const dates = ds.length
       ? ds[0].toLocaleDateString("en-GB",{day:"numeric",month:"short"}) +
         (dayKey(ds[0]) !== dayKey(ds[ds.length-1]) ? " – " + ds[ds.length-1].toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "")
@@ -664,10 +686,19 @@ $("#newTrip").addEventListener("click", () => {
 document.querySelectorAll("#kindSeg button").forEach(b =>
   b.addEventListener("click", () => setKind(b.dataset.kind)));
 
+["input","change"].forEach(ev => {
+  $("#f_start").addEventListener(ev, () => syncEnd(false));
+  $("#f_end").addEventListener(ev, () => {
+    const s = $("#f_start").value, e = $("#f_end");
+    if(s && e.value && e.value < s){ e.value = ""; toast("That's before the start time"); }
+  });
+});
+
 $("#saveBtn").addEventListener("click", () => {
   const d = collect();
   if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return; }
   if(d.kind === "stop" && !d.place){ toast("Add a place first"); return; }
+  if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return; }
   if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
   else trip().legs.push(Object.assign({id:uid()}, d));
   save(); render(); hideAll();
