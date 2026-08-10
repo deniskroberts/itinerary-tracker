@@ -110,6 +110,40 @@
     border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
   }
 
+  /* a journey that runs for days holds everything booked inside it */
+  .rail{
+    border-left:2px solid var(--stay); border-radius:2px;
+    padding-left:11px; margin-left:7px;
+  }
+  .rail > * + *{margin-top:8px}
+  .rail .nested{margin-left:16px}
+  .sea{
+    font-size:12px; color:var(--tx3); letter-spacing:.03em;
+    padding:9px 2px; font-style:italic;
+  }
+  .sea::before{content:"🌊  "; font-style:normal}
+
+  .leg.anchor{background:#171b2e; border-color:#33305c}
+  .leg.anchor::before{background:var(--stay); width:9px}
+  .leg.anchor.board{border-bottom-left-radius:0}
+  .leg.anchor.disembark{border-top-left-radius:0}
+  .alab{
+    font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--stay); font-weight:800; margin-bottom:2px;
+  }
+
+  .portrow{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px;
+    padding:9px 11px; border:1px dashed #33305c; border-radius:11px; background:#15182a;
+  }
+  .portrow.done{opacity:.58}
+  .portrow .pn{font-size:14.5px; font-weight:680; letter-spacing:-.01em}
+  .portrow .ps{font-size:12px; color:var(--tx3); font-variant-numeric:tabular-nums}
+  .portrow button{
+    margin-left:auto; background:none; border:1px solid var(--line); color:var(--tx3);
+    border-radius:8px; padding:3px 9px; font-size:12px; font-family:inherit; font-weight:600;
+  }
+
   .gap{
     display:flex; align-items:center; margin:6px 0 6px 8px;
     font-size:12px; color:var(--tx3); padding-left:12px; border-left:2px dashed var(--line);
@@ -193,6 +227,7 @@
   }
   .menuitem small{display:block; color:var(--tx3); font-size:12.5px; margin-top:2px}
   .menuitem.red{color:var(--bad)}
+  .ver{font-size:12px; color:var(--tx3); text-align:center; margin-top:18px; font-variant-numeric:tabular-nums}
   #toast{
     position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translate(-50%,14px);
     background:#e8eef6; color:#0b1017; padding:9px 16px; border-radius:20px; font-size:13.5px; font-weight:620;
@@ -228,7 +263,8 @@
 
   <div class="seg" id="kindSeg">
     <button type="button" data-kind="move" class="on">Journey</button>
-    <button type="button" data-kind="stop">Stay or event</button>
+    <button type="button" data-kind="stop">Stay / event</button>
+    <button type="button" data-kind="port">Port call</button>
   </div>
 
   <label for="f_mode">Type</label>
@@ -240,13 +276,19 @@
   </div>
 
   <div id="rowStop" hidden>
-    <label for="f_place">Place</label>
+    <label for="f_place" id="lblPlace">Place</label>
     <input id="f_place" placeholder="Hôtel Fabric, 31 rue de la Folie" autocomplete="off">
   </div>
+  <div class="hint" id="portHint" hidden>Ports of call are their own entries — they'll nest inside whichever journey covers those dates, and anything you book ashore nests under the port.</div>
 
-  <div class="two">
-    <div><label for="f_start" id="lblStart">Departs</label><input id="f_start" type="datetime-local"></div>
-    <div><label for="f_end" id="lblEnd">Arrives</label><input id="f_end" type="datetime-local"></div>
+  <label for="f_start" id="lblStart">Departs</label>
+  <input id="f_start" type="datetime-local">
+  <label for="f_end" id="lblEnd">Arrives</label>
+  <input id="f_end" type="datetime-local">
+
+  <div id="rowAboard" hidden>
+    <label for="f_aboard">All aboard by <span class="opt">(optional — assumes 30 min before sailing)</span></label>
+    <input id="f_aboard" type="datetime-local">
   </div>
 
   <label for="f_cost">Cost <span class="opt">(optional)</span></label>
@@ -280,6 +322,7 @@
     <button class="btn" id="cancelBtn">Cancel</button>
     <button class="btn primary" id="saveBtn">Save</button>
   </div>
+  <div class="actions" id="againRow"><button class="btn" id="againBtn">Save and add another</button></div>
 </div>
 
 <!-- Trips -->
@@ -302,6 +345,7 @@
   <button class="menuitem" id="mExport">Export backup<small>All itineraries, as a .json file</small></button>
   <button class="menuitem" id="mImport">Restore from backup<small>Replaces everything in the app</small></button>
   <button class="menuitem red" id="mClear">Clear this itinerary<small>Deletes its entries — cannot be undone</small></button>
+  <div class="ver" id="verLine"></div>
   <div class="actions"><button class="btn" id="menuClose">Close</button></div>
   <input type="file" id="fileIn" accept="application/json,.json" hidden>
 </div>
@@ -311,6 +355,7 @@
 <script>
 (function(){
 "use strict";
+const APP_VERSION = "1.5";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -341,6 +386,22 @@ try{
 if(!store) store = blank();
 if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
 if(!store.trips.length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
+// v1.5: port calls that used to live inside a journey become entries in their own right
+let migrated = false;
+store.trips.forEach(t => {
+  const born = [];
+  t.legs.forEach(l => {
+    if(Array.isArray(l.stops) && l.stops.length){
+      l.stops.filter(s => s.name).forEach(s => born.push({
+        id: uid(), kind:"port", mode:"Port call", place:s.name,
+        start:s.in || "", end:s.out || "", cost:null, ccy:"GBP", links:[]
+      }));
+    }
+    delete l.stops;
+  });
+  if(born.length){ t.legs.push.apply(t.legs, born); migrated = true; }
+});
+if(migrated) try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
 if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
 
 let storageOK = true;
@@ -390,10 +451,31 @@ function totalsFor(t){
 }
 const totalsText = t => Object.keys(totalsFor(t)).map(c => money(totalsFor(t)[c], c));
 
-const MOVE_TYPES = ["Flight","Train","Coach","Bus","Ferry","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
+const MOVE_TYPES = ["Flight","Train","Cruise","Ferry","Coach","Bus","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
-const ICONS = {Flight:"✈",Train:"🚆",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
-  Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",Other:"•"};
+const PORT_TYPES = ["Port call","Sea day","Tender port","Other"];
+const ICONS = {Flight:"✈",Train:"🚆",Cruise:"🛳",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
+  Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",
+  "Port call":"⚓","Tender port":"⚓","Sea day":"🌊",Other:"•"};
+
+const DAY = 86400000;
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const daysBetween = (a,b) => Math.round((midnight(b) - midnight(a)) / DAY);
+
+// a journey becomes a "span" — boarding at one end, disembarking at the other —
+// once it runs a full day or more, or has port calls sitting inside it
+function isSpan(x, all){
+  if(x.l.kind !== "move" || !x.s || !x.e) return false;
+  if(x.e - x.s >= DAY) return true;
+  return all.some(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.s >= x.s && y.s <= x.e);
+}
+const encloses = (span, t) => t && span.s && span.e && t >= span.s && t <= span.e;
+
+// all-aboard: explicit if set, otherwise half an hour before the ship sails
+function aboardBy(port){
+  if(port.l.aboard) return parse(port.l.aboard);
+  return port.e ? new Date(port.e.getTime() - 30*60000) : null;
+}
 
 function sorted(){
   return trip().legs.slice().map(l => ({l, s:parse(l.start), e:parse(l.end)}))
@@ -404,14 +486,14 @@ function sorted(){
 function render(){
   const t = trip();
   $("#tripName").textContent = t.name;
-  const spans = sorted();
-  $("#empty").hidden = spans.length > 0;
+  const all = sorted();
+  $("#empty").hidden = all.length > 0;
   const list = $("#list"); list.innerHTML = "";
   const now = new Date();
 
-  const dated = spans.filter(x => x.s);
+  const dated = all.filter(x => x.s);
   const parts = [];
-  if(spans.length) parts.push(spans.length + (spans.length===1 ? " entry" : " entries"));
+  if(all.length) parts.push(all.length + (all.length===1 ? " entry" : " entries"));
   if(dated.length){
     const fmt = d => d.toLocaleDateString("en-GB",{day:"numeric", month:"short"});
     const a = fmt(dated[0].s), b = fmt(dated[dated.length-1].s);
@@ -421,55 +503,196 @@ function render(){
   if(tot.length) parts.push(tot.join(" · "));
   $("#tripSub").textContent = parts.length ? parts.join(" · ") : "Tap + to begin";
 
-  // focus: prefer journeys
-  const moves = spans.filter(x => x.l.kind !== "stop");
-  const pick = moves.find(x => x.s && x.e && now >= x.s && now <= x.e)
-            || moves.find(x => x.s && x.s > now)
-            || spans.find(x => x.s && x.e && now >= x.s && now <= x.e);
+  const spans = all.filter(x => isSpan(x, all));
+  const spanOf = x => spans.find(s => s.l.id !== x.l.id && encloses(s, x.s)) || null;
+  const portOf = x => all.find(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.e && x.s >= y.s && x.s <= y.e) || null;
+
+  /* ---- focus ---- */
+  const aboard = spans.find(s => now >= s.s && now <= s.e);
+  let pick = null, live = false;
+  if(aboard){
+    // mid-cruise, what matters is today's port or excursion — not disembarkation next week
+    pick = all.find(x => x.l.id !== aboard.l.id && x.s && x.e && now >= x.s && now <= x.e)
+        || all.find(x => x.l.id !== aboard.l.id && x.s && x.s > now && encloses(aboard, x.s))
+        || aboard;
+  } else {
+    const moves = all.filter(x => x.l.kind === "move");
+    pick = moves.find(x => x.s && x.e && now >= x.s && now <= x.e)
+        || moves.find(x => x.s && x.s > now)
+        || all.find(x => x.s && x.s > now)
+        || all.find(x => x.s && x.e && now >= x.s && now <= x.e);
+  }
   const f = $("#focus");
   if(pick){
-    const live = pick.s && pick.e && now >= pick.s && now <= pick.e;
-    const title = pick.l.kind === "stop" ? (pick.l.place || pick.l.mode) : (pick.l.from||"?")+" → "+(pick.l.to||"?");
+    live = pick.s && pick.e && now >= pick.s && now <= pick.e;
     f.hidden = false;
     f.innerHTML = live
-      ? '<div class="lab">In progress</div><div class="rt">'+esc(title)+'</div><div class="mt">Until '+hhmm(pick.e)+
-        (dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")+' · '+dur(mins(pick.e-now))+' to go</div>'
-      : '<div class="lab">Next up</div><div class="rt">'+esc(title)+'</div><div class="mt">'+
+      ? '<div class="lab">' + (pick === aboard ? "Aboard" : "In progress") + '</div><div class="rt">'+esc(titleOf(pick))+'</div>'+
+        '<div class="mt">Until '+hhmm(pick.e)+(dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")+
+        ' · '+dur(mins(pick.e-now))+' to go</div>'
+      : '<div class="lab">Next up</div><div class="rt">'+esc(titleOf(pick))+'</div><div class="mt">'+
         (dayKey(pick.s)===dayKey(now) ? "Today at " : dayLabel(pick.s).split(" · ")[0]+" at ")+hhmm(pick.s)+
         ' · in '+dur(mins(pick.s-now))+'</div>';
   } else f.hidden = true;
 
   renderTotals();
 
-  let curDay = null, prevMove = null;
-  spans.forEach(x => {
-    const key = x.s ? dayKey(x.s) : "tbc";
-    if(key !== curDay){
-      curDay = key;
+  /* ---- build a flat, chronological list of things to draw ---- */
+  const items = [];
+  all.forEach(x => {
+    if(spans.indexOf(x) > -1){
+      items.push({t:x.s, type:"board", x:x, span:x});
+      items.push({t:x.e, type:"disembark", x:x, span:x});
+    } else {
+      items.push({t:x.s || x.e, type:"entry", x:x, span:spanOf(x), port:portOf(x)});
+    }
+  });
+  items.sort((a,b) => (!a.t && !b.t) ? 0 : !a.t ? 1 : !b.t ? -1 : a.t - b.t);
+
+  /* ---- draw ---- */
+  let curDay = null, rail = null, prevMove = null, prevItem = null;
+  items.forEach(it => {
+    const day = it.t ? dayKey(it.t) : "tbc";
+
+    // days with nothing at all in them, between two things aboard the same span, fold up.
+    // any entry on a day gives that day an item, so a day with an excursion can never be folded away.
+    if(it.span && prevItem && prevItem.span === it.span && it.t && prevItem.t){
+      const empty = daysBetween(prevItem.t, it.t) - 1;
+      if(empty >= 1){
+        const r = document.createElement("div");
+        r.className = "rail";
+        r.innerHTML = '<div class="sea">'+empty+(empty===1 ? " day" : " days")+' at sea</div>';
+        list.appendChild(r);
+        rail = null; curDay = null;
+      }
+    }
+
+    if(day !== curDay){
+      curDay = day; rail = null;
       const h = document.createElement("div");
       h.className = "dayhead";
-      h.innerHTML = "<span>"+esc(x.s ? dayLabel(x.s) : "Date to be confirmed")+"</span>";
+      h.innerHTML = "<span>"+esc(it.t ? dayLabel(it.t) : "Date to be confirmed")+"</span>";
       list.appendChild(h);
     }
-    if(x.l.kind !== "stop"){
-      if(prevMove && prevMove.e && x.s && dayKey(prevMove.e) === key){
-        const g = mins(x.s - prevMove.e);
-        if(g < 0){
-          const d = document.createElement("div");
-          d.className = "gap clash";
-          d.textContent = "⚠ Overlaps the previous journey by " + dur(-g);
-          list.appendChild(d);
-        } else if(g < 360){
-          const d = document.createElement("div");
-          d.className = "gap" + (g < 45 ? " tight" : "");
-          d.textContent = (g < 45 ? "⚠ " : "") + dur(g) + " in " + (prevMove.l.to || "between") + (g < 45 ? " — tight" : "");
-          list.appendChild(d);
+
+    const box = () => {
+      if(!it.span) { rail = null; return list; }
+      if(!rail){ rail = document.createElement("div"); rail.className = "rail"; list.appendChild(rail); }
+      return rail;
+    };
+
+    if(it.type === "board" || it.type === "disembark"){
+      rail = null;                       // board/disembark cap the rail, they don't sit in it
+      list.appendChild(anchor(it, now));
+      prevMove = it.type === "disembark" ? it.x : prevMove;
+    } else if(it.x.l.kind === "port"){
+      box().appendChild(portRow(it.x, now));
+    } else {
+      // connection warnings between consecutive journeys on the same day
+      if(it.x.l.kind === "move" && !it.span){
+        if(prevMove && prevMove.e && it.t && dayKey(prevMove.e) === day){
+          const g = mins(it.t - prevMove.e);
+          if(g < 0) list.appendChild(gapRow("clash", "⚠ Overlaps the previous journey by " + dur(-g)));
+          else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
+            (g < 45 ? "⚠ " : "") + dur(g) + " in " + (prevMove.l.to || "between") + (g < 45 ? " — tight" : "")));
+        }
+        prevMove = it.x;
+      }
+      const el = card(it.x, now);
+      if(it.port) el.classList.add("nested");
+      box().appendChild(el);
+      // back-aboard check for anything ashore during a port call
+      if(it.port){
+        const by = aboardBy(it.port), ends = it.x.e || it.x.s;
+        if(by && ends && ends > by){
+          const w = gapRow("clash", "⚠ All aboard by " + hhmm(by) + " — this runs to " + hhmm(ends));
+          w.classList.add("nested");
+          box().appendChild(w);
         }
       }
-      prevMove = x;
     }
-    list.appendChild(card(x, now));
+    prevItem = it;
   });
+}
+
+function gapRow(cls, text){
+  const d = document.createElement("div");
+  d.className = "gap " + cls;
+  d.textContent = text;
+  return d;
+}
+
+function titleOf(x){
+  const l = x.l;
+  if(l.kind === "stop") return l.place || l.mode;
+  if(l.kind === "port") return l.place || "Port call";
+  return (l.from||"?") + " → " + (l.to||"?");
+}
+
+/* boarding / disembarking cards at each end of a span */
+function anchor(it, now){
+  const x = it.x, l = x.l, boarding = it.type === "board";
+  const el = document.createElement("div");
+  el.className = "leg anchor" + (boarding ? " board" : " disembark") +
+                 ((boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "");
+  const when = boarding ? x.s : x.e;
+  const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
+
+  let h = '<div class="times"><div class="a">'+(when?hhmm(when):"—")+'</div></div><div class="body">';
+  h += '<div class="alab">'+(boarding ? "Board" : "Disembark")+'</div>';
+  h += '<div class="route">'+esc(where)+'</div>';
+
+  const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
+  if(boarding){
+    const c = parseFloat(l.cost);
+    if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
+    if(x.s && x.e) bits.push('<span>'+dur(mins(x.e - x.s))+' aboard</span>');
+    if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
+  } else {
+    const roll = spanTotals(it.span);
+    Object.keys(roll).forEach(c => bits.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
+  }
+  h += '<div class="meta">'+bits.join("")+'</div>';
+  if(boarding && l.notes) h += '<div class="notes">'+esc(l.notes)+'</div>';
+
+  const links = (l.links||[]).filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()));
+  if(boarding && links.length) h += '<div class="links">'+links.map(a =>
+    '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
+
+  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
+  el.innerHTML = h;
+  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  return el;
+}
+
+/* fare plus everything booked inside the span */
+function spanTotals(span){
+  const by = {};
+  const add = l => {
+    const n = parseFloat(l.cost);
+    if(!isNaN(n) && n > 0){ const c = l.ccy || "GBP"; by[c] = (by[c]||0) + n; }
+  };
+  add(span.l);
+  sorted().forEach(y => { if(y.l.id !== span.l.id && encloses(span, y.s)) add(y.l); });
+  return by;
+}
+
+/* a port call — a slim header, not a full card */
+function portRow(x, now){
+  const l = x.l;
+  const el = document.createElement("div");
+  el.className = "portrow" + (x.e && now > x.e ? " done" : "");
+  const by = aboardBy(x);
+  let sub = [];
+  if(x.s) sub.push(hhmm(x.s) + (x.e ? "–" + (dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" " : "") + hhmm(x.e) : ""));
+  if(by && x.e) sub.push("all aboard " + hhmm(by));
+  const c = parseFloat(l.cost);
+  if(!isNaN(c) && c > 0) sub.push(money(c, l.ccy||"GBP"));
+  el.innerHTML = '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
+                 (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
+                 '<button data-edit="'+l.id+'">Edit</button>';
+  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  return el;
 }
 
 function renderTotals(){
@@ -503,6 +726,7 @@ function card(x, now){
   h += '<div class="route">' + (stop
         ? esc(l.place || l.mode || "Stop")
         : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?")) + '</div>';
+  // (ports draw through portRow, not here)
 
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
   const cost = parseFloat(l.cost);
@@ -538,10 +762,14 @@ function setKind(k){
   kind = k;
   document.querySelectorAll("#kindSeg button").forEach(b => b.classList.toggle("on", b.dataset.kind === k));
   $("#rowMove").hidden = k !== "move";
-  $("#rowStop").hidden = k !== "stop";
-  $("#lblStart").textContent = k === "move" ? "Departs" : "Starts / check in";
-  $("#lblEnd").textContent   = k === "move" ? "Arrives" : "Ends / check out";
-  const types = k === "move" ? MOVE_TYPES : STOP_TYPES;
+  $("#rowStop").hidden = k === "move";
+  $("#rowAboard").hidden = k !== "port";
+  $("#portHint").hidden = k !== "port";
+  $("#lblPlace").textContent = k === "port" ? "Port" : "Place";
+  $("#f_place").placeholder = k === "port" ? "Lisbon" : "Hôtel Fabric, 31 rue de la Folie";
+  $("#lblStart").textContent = k === "move" ? "Departs" : k === "port" ? "Ship arrives" : "Starts / check in";
+  $("#lblEnd").textContent   = k === "move" ? "Arrives" : k === "port" ? "Ship sails"   : "Ends / check out";
+  const types = k === "move" ? MOVE_TYPES : k === "port" ? PORT_TYPES : STOP_TYPES;
   const cur = $("#f_mode").value;
   $("#f_mode").innerHTML = types.map(t => '<option>'+t+'</option>').join("");
   if(types.indexOf(cur) > -1) $("#f_mode").value = cur;
@@ -571,11 +799,13 @@ function openSheet(id){
   $("#f_end").value   = l ? (l.end || "") : "";
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
+  $("#f_aboard").value = l ? (l.aboard || "") : "";
   $("#f_ref").value   = l ? (l.ref || "") : "";
   $("#f_notes").value = l ? (l.notes || "") : "";
   $("#linkRows").innerHTML = "";
   ((l && l.links) || []).forEach(a => linkRow(a.label, a.url));
   $("#delBtn").hidden = !l;
+  $("#againRow").hidden = !!l;
   syncEnd(true);
   show("#sheet");
 }
@@ -610,7 +840,8 @@ function collect(){
     from:$("#f_from").value.trim(), to:$("#f_to").value.trim(), place:$("#f_place").value.trim(),
     start:$("#f_start").value, end:$("#f_end").value,
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
-    ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links
+    ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
+    aboard: kind === "port" ? $("#f_aboard").value : ""
   };
 }
 
@@ -667,6 +898,7 @@ function tripActions(t){
 $("#fab").addEventListener("click", () => openSheet(null));
 $("#scrim").addEventListener("click", hideAll);
 $("#cancelBtn").addEventListener("click", hideAll);
+$("#verLine").textContent = "Itinerary · version " + APP_VERSION;
 $("#menuBtn").addEventListener("click", () => {
   const r = store.rate;
   $("#rateNow").textContent = "€1 = " + r.EUR + " · $1 = " + r.USD + " · CHF 1 = " + r.CHF;
@@ -694,15 +926,31 @@ document.querySelectorAll("#kindSeg button").forEach(b =>
   });
 });
 
-$("#saveBtn").addEventListener("click", () => {
+function commit(){
   const d = collect();
-  if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return; }
-  if(d.kind === "stop" && !d.place){ toast("Add a place first"); return; }
-  if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return; }
+  if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return false; }
+  if(d.kind !== "move" && !d.place){ toast(d.kind === "port" ? "Name the port first" : "Add a place first"); return false; }
+  if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return false; }
   if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
   else trip().legs.push(Object.assign({id:uid()}, d));
-  save(); render(); hideAll();
-  toast(editing ? "Updated" : "Added");
+  save(); render();
+  return true;
+}
+
+$("#saveBtn").addEventListener("click", () => {
+  const was = editing;
+  if(!commit()) return;
+  hideAll();
+  toast(was ? "Updated" : "Added");
+});
+
+// keeps you in the sheet when you're entering a run of ports or excursions
+$("#againBtn").addEventListener("click", () => {
+  const k = kind;
+  if(!commit()) return;
+  toast("Added — next one");
+  openSheet(null);
+  setKind(k);
 });
 
 $("#delBtn").addEventListener("click", () => {
@@ -712,12 +960,13 @@ $("#delBtn").addEventListener("click", () => {
   save(); render(); hideAll(); toast("Deleted");
 });
 
-document.querySelectorAll(".quick button").forEach(b => {
+document.querySelectorAll(".quick button[data-add]").forEach(b => {
   b.addEventListener("click", () => {
     const [label, url] = b.dataset.add.split("|");
     linkRow(label, url).querySelectorAll("input")[1].focus();
   });
 });
+
 
 $("#mRate").addEventListener("click", () => {
   const e = prompt("How many pounds is €1?", store.rate.EUR);
