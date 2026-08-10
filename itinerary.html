@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Itinerary">
+<meta name="theme-color" content="#0b1017">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<title>Itinerary</title>
+<style>
+  :root{
+    --bg:#0b1017; --bg2:#121a24; --card:#161f2b; --line:#25313f;
+    --tx:#e8eef6; --tx2:#9aa9bb; --tx3:#6b7c90;
+    --accent:#4da3ff; --good:#3ecf8e; --warn:#f5a623; --bad:#ff6b6b; --stay:#b388ff;
+    --r:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--tx)}
+  body{
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+    -webkit-text-size-adjust:100%;
+  }
+  header{
+    position:sticky; top:0; z-index:20;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background:rgba(11,16,23,.86); backdrop-filter:saturate(160%) blur(14px);
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+  }
+  #tripBtn{
+    flex:1; min-width:0; text-align:left; background:none; border:0; padding:0; color:var(--tx); font-family:inherit;
+  }
+  #tripBtn .n{font-size:21px; font-weight:700; letter-spacing:-.02em; display:block;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #tripBtn .n::after{content:" ⌄"; color:var(--tx3); font-weight:400}
+  #tripSub{font-size:12.5px; color:var(--tx3); margin-top:2px}
+  .iconbtn{
+    width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
+    background:var(--bg2); color:var(--tx2); font-size:17px; line-height:1;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  main{padding:14px 16px 0; max-width:640px; margin:0 auto}
+
+  #focus{
+    border-radius:var(--r); padding:13px 15px; margin-bottom:12px;
+    background:linear-gradient(150deg,#173049,#122031); border:1px solid #2b4a6b;
+  }
+  #focus .lab{font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  #focus .rt{font-size:17px; font-weight:650; margin:5px 0 3px; letter-spacing:-.01em}
+  #focus .mt{font-size:13px; color:var(--tx2)}
+
+  #totals{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:16px;
+    padding:11px 14px; border:1px solid var(--line); border-radius:var(--r); background:var(--bg2);
+  }
+  #totals .k{font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:var(--tx3); font-weight:700; margin-right:auto}
+  #totals .v{font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  #totals .approx{font-size:12.5px; color:var(--tx3); font-variant-numeric:tabular-nums; width:100%}
+
+  .dayhead{
+    display:flex; align-items:center; gap:10px;
+    font-size:11.5px; letter-spacing:.10em; text-transform:uppercase; color:var(--tx3);
+    font-weight:700; margin:22px 0 9px;
+  }
+  .dayhead:first-child{margin-top:0}
+  .dayhead::after{content:""; flex:1; height:1px; background:var(--line)}
+
+  .leg{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:12px 13px; display:flex; gap:12px; position:relative; overflow:hidden;
+  }
+  .leg::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--line)}
+  .leg.done{opacity:.58}
+  .leg.done::before{background:var(--tx3)}
+  .leg.live::before{background:var(--good)}
+  .leg.next::before{background:var(--accent)}
+  .leg.stop{background:#1a1a2b; border-color:#2e2a45}
+  .leg.stop::before{background:var(--stay)}
+  .leg.stop.done::before{background:var(--tx3)}
+  .leg + .leg{margin-top:8px}
+  .times{flex:0 0 52px; text-align:right; padding-top:1px}
+  .times .a{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  .times .b{font-size:13.5px; color:var(--tx3); font-variant-numeric:tabular-nums; margin-top:2px}
+  .times .b::before{content:"↓ "; font-size:11px}
+  .body{flex:1; min-width:0}
+  .route{font-size:16px; font-weight:620; letter-spacing:-.01em; word-break:break-word}
+  .route .ar{color:var(--tx3); font-weight:400; margin:0 5px}
+  .meta{font-size:12.5px; color:var(--tx3); margin-top:3px; display:flex; flex-wrap:wrap; gap:5px 9px; align-items:center}
+  .chip{
+    background:var(--bg2); border:1px solid var(--line); border-radius:6px;
+    padding:1px 6px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
+  }
+  .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
+  .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
+  .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+  .links a{
+    display:inline-flex; align-items:center; gap:5px; text-decoration:none;
+    background:#1d2a3a; border:1px solid #2c3d51; color:var(--accent);
+    border-radius:9px; padding:6px 10px; font-size:12.5px; font-weight:620;
+  }
+  .links a:active{background:#24344a}
+  .rowbtns{display:flex; gap:6px; margin-top:10px}
+  .rowbtns button{
+    background:none; border:1px solid var(--line); color:var(--tx3);
+    border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
+  }
+
+  .gap{
+    display:flex; align-items:center; margin:6px 0 6px 8px;
+    font-size:12px; color:var(--tx3); padding-left:12px; border-left:2px dashed var(--line);
+    min-height:26px;
+  }
+  .gap.tight{color:var(--warn); border-color:#4a3a1a}
+  .gap.clash{color:var(--bad); border-color:#4a2323; font-weight:600}
+
+  #empty{text-align:center; color:var(--tx3); padding:56px 20px; font-size:14.5px; line-height:1.6}
+
+  #fab{
+    position:fixed; right:18px; bottom:calc(20px + env(safe-area-inset-bottom));
+    width:58px; height:58px; border-radius:50%; border:0; z-index:30;
+    background:var(--accent); color:#04121f; font-size:30px; font-weight:400; line-height:1;
+    box-shadow:0 8px 26px rgba(0,0,0,.5);
+  }
+  #fab:active{transform:scale(.94)}
+
+  .scrim{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:40; opacity:0; pointer-events:none; transition:opacity .2s}
+  .scrim.on{opacity:1; pointer-events:auto}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:50; max-height:92vh; overflow-y:auto;
+    background:var(--bg2); border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0; padding:8px 16px calc(26px + env(safe-area-inset-bottom));
+    transform:translateY(102%); transition:transform .26s cubic-bezier(.32,.72,0,1);
+    -webkit-overflow-scrolling:touch; visibility:hidden;
+  }
+  .sheet.on{transform:translateY(0); visibility:visible}
+  .grab{width:38px; height:4px; border-radius:2px; background:var(--line); margin:6px auto 14px}
+  .sheet h2{font-size:17px; margin:0 0 14px; font-weight:700; letter-spacing:-.01em}
+  label{display:block; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--tx3); font-weight:700; margin:14px 0 5px}
+  label .opt{text-transform:none; letter-spacing:0; font-weight:500}
+  input,select,textarea{
+    width:100%; background:var(--card); border:1px solid var(--line); color:var(--tx);
+    border-radius:11px; padding:11px 12px; font:16px/1.3 inherit; font-family:inherit;
+    -webkit-appearance:none; appearance:none;
+  }
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--accent)}
+  select{background-image:linear-gradient(45deg,transparent 50%,var(--tx3) 50%),linear-gradient(135deg,var(--tx3) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat}
+  textarea{min-height:70px; resize:vertical}
+  .two{display:flex; gap:10px}
+  .two > div{flex:1; min-width:0}
+  .money{display:flex; gap:10px}
+  .money input{flex:1}
+  .money select{flex:0 0 104px}
+
+  .seg{display:flex; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:3px; margin-bottom:4px}
+  .seg button{
+    flex:1; background:none; border:0; color:var(--tx3); font:600 14px inherit; font-family:inherit;
+    padding:9px 6px; border-radius:9px;
+  }
+  .seg button.on{background:var(--accent); color:#04121f; font-weight:700}
+
+  .linkrow{display:flex; gap:8px; margin-top:8px}
+  .linkrow input:first-child{flex:0 0 34%}
+  .linkrow button{flex:0 0 40px; background:var(--card); border:1px solid var(--line); color:var(--tx3); border-radius:11px; font-size:17px}
+  .quick{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+  .quick button{
+    background:var(--card); border:1px solid var(--line); color:var(--tx2);
+    border-radius:9px; padding:7px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
+  }
+  .hint{font-size:12px; color:var(--tx3); margin-top:8px; line-height:1.5}
+  .actions{display:flex; gap:10px; margin-top:24px}
+  .btn{flex:1; border-radius:12px; padding:14px; font:600 16px inherit; font-family:inherit; border:1px solid var(--line); background:var(--card); color:var(--tx)}
+  .btn.primary{background:var(--accent); color:#04121f; border-color:var(--accent); font-weight:700}
+  .btn.danger{color:var(--bad); border-color:#3d2222; background:none; flex:0 0 auto; padding:14px 18px}
+
+  .triprow{display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line)}
+  .triprow > button:first-child{
+    flex:1; min-width:0; text-align:left; background:none; border:0; color:var(--tx);
+    padding:15px 2px; font:16px inherit; font-family:inherit;
+  }
+  .triprow.active > button:first-child{color:var(--accent); font-weight:650}
+  .triprow small{display:block; color:var(--tx3); font-size:12.5px; margin-top:2px; font-weight:400}
+  .triprow .more{flex:0 0 34px; height:34px; border-radius:9px; border:1px solid var(--line); background:none; color:var(--tx3); font-size:15px}
+
+  .menuitem{
+    display:block; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line);
+    color:var(--tx); padding:16px 4px; font:16px inherit; font-family:inherit;
+  }
+  .menuitem small{display:block; color:var(--tx3); font-size:12.5px; margin-top:2px}
+  .menuitem.red{color:var(--bad)}
+  #toast{
+    position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom)); transform:translate(-50%,14px);
+    background:#e8eef6; color:#0b1017; padding:9px 16px; border-radius:20px; font-size:13.5px; font-weight:620;
+    opacity:0; transition:all .22s; z-index:60; pointer-events:none; max-width:80%; text-align:center;
+  }
+  #toast.on{opacity:1; transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<header>
+  <button id="tripBtn">
+    <span class="n" id="tripName">My trip</span>
+    <span id="tripSub"></span>
+  </button>
+  <button class="iconbtn" id="menuBtn" aria-label="Menu">•••</button>
+</header>
+
+<main>
+  <div id="focus" hidden></div>
+  <div id="totals" hidden></div>
+  <div id="list"></div>
+  <div id="empty">No entries yet.<br>Tap <b>+</b> to add the first one.</div>
+</main>
+
+<button id="fab" aria-label="Add entry">+</button>
+<div class="scrim" id="scrim"></div>
+
+<!-- Add / edit entry -->
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2 id="sheetTitle">Add entry</h2>
+
+  <div class="seg" id="kindSeg">
+    <button type="button" data-kind="move" class="on">Journey</button>
+    <button type="button" data-kind="stop">Stay or event</button>
+  </div>
+
+  <label for="f_mode">Type</label>
+  <select id="f_mode"></select>
+
+  <div class="two" id="rowMove">
+    <div><label for="f_from">From</label><input id="f_from" placeholder="London St Pancras" autocomplete="off"></div>
+    <div><label for="f_to">To</label><input id="f_to" placeholder="Paris Nord" autocomplete="off"></div>
+  </div>
+
+  <div id="rowStop" hidden>
+    <label for="f_place">Place</label>
+    <input id="f_place" placeholder="Hôtel Fabric, 31 rue de la Folie" autocomplete="off">
+  </div>
+
+  <div class="two">
+    <div><label for="f_start" id="lblStart">Departs</label><input id="f_start" type="datetime-local"></div>
+    <div><label for="f_end" id="lblEnd">Arrives</label><input id="f_end" type="datetime-local"></div>
+  </div>
+
+  <label for="f_cost">Cost <span class="opt">(optional)</span></label>
+  <div class="money">
+    <input id="f_cost" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+    <select id="f_ccy"><option>GBP</option><option>EUR</option><option>USD</option><option>CHF</option></select>
+  </div>
+
+  <label for="f_ref">Reference / seat / room <span class="opt">(optional)</span></label>
+  <input id="f_ref" placeholder="Coach 12, seat 34 · BK7Y2P" autocomplete="off">
+
+  <label>Links</label>
+  <div id="linkRows"></div>
+  <div class="quick">
+    <button type="button" data-add="Wallet|shoebox://">+ Wallet pass</button>
+    <button type="button" data-add="Email|message://">+ Email</button>
+    <button type="button" data-add="Map|https://maps.apple.com/?q=">+ Map</button>
+    <button type="button" data-add="Link|https://">+ Other</button>
+  </div>
+  <div class="hint"><b>Wallet:</b> <code>shoebox://</code> opens the Wallet app. <b>Email:</b> in Mail, share the message → Copy, then paste here. Any URL or app link works.</div>
+
+  <label for="f_notes">Notes <span class="opt">(optional)</span></label>
+  <textarea id="f_notes" placeholder="Check in 90 min before. Gate closes 20 min prior."></textarea>
+
+  <div class="actions">
+    <button class="btn danger" id="delBtn" hidden>Delete</button>
+    <button class="btn" id="cancelBtn">Cancel</button>
+    <button class="btn primary" id="saveBtn">Save</button>
+  </div>
+</div>
+
+<!-- Trips -->
+<div class="sheet" id="trips">
+  <div class="grab"></div>
+  <h2>Itineraries</h2>
+  <div id="tripList"></div>
+  <div class="actions">
+    <button class="btn" id="tripsClose">Close</button>
+    <button class="btn primary" id="newTrip">New itinerary</button>
+  </div>
+</div>
+
+<!-- Menu -->
+<div class="sheet" id="menu">
+  <div class="grab"></div>
+  <h2>Options</h2>
+  <button class="menuitem" id="mRate">Conversion rate<small id="rateNow"></small></button>
+  <button class="menuitem" id="mText">Copy this itinerary as text<small>Plain text for a message or email</small></button>
+  <button class="menuitem" id="mExport">Export backup<small>All itineraries, as a .json file</small></button>
+  <button class="menuitem" id="mImport">Restore from backup<small>Replaces everything in the app</small></button>
+  <button class="menuitem red" id="mClear">Clear this itinerary<small>Deletes its entries — cannot be undone</small></button>
+  <div class="actions"><button class="btn" id="menuClose">Close</button></div>
+  <input type="file" id="fileIn" accept="application/json,.json" hidden>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "itinerary.v2";
+const OLD = "itinerary.v1";
+const $ = s => document.querySelector(s);
+
+/* ---------- store ---------- */
+const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
+let store = null;
+
+function blank(){ return {v:2, active:null, rate:{GBP:1, EUR:0.86, USD:0.79, CHF:0.88}, trips:[]}; }
+function newTrip(name){ return {id:uid(), name:name||"New itinerary", legs:[]}; }
+
+try{
+  const raw = localStorage.getItem(KEY);
+  if(raw){ const p = JSON.parse(raw); if(p && Array.isArray(p.trips)) store = p; }
+  if(!store){
+    const old = localStorage.getItem(OLD);
+    if(old){
+      const p = JSON.parse(old);
+      if(p && Array.isArray(p.legs)){
+        store = blank();
+        const t = newTrip(p.trip || "My trip");
+        t.legs = p.legs.map(l => Object.assign({kind:"move", cost:null, ccy:"GBP"}, l));
+        store.trips.push(t); store.active = t.id;
+      }
+    }
+  }
+}catch(e){}
+if(!store) store = blank();
+if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
+if(!store.trips.length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
+if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
+
+let storageOK = true;
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); }
+  catch(e){ if(storageOK){ storageOK = false; toast("Couldn't save — storage is blocked here"); } }
+}
+const trip = () => store.trips.find(t => t.id === store.active) || store.trips[0];
+
+/* ---------- helpers ---------- */
+function parse(s){
+  if(!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(s);
+  return m ? new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5]) : null;
+}
+const pad = n => String(n).padStart(2,"0");
+const hhmm = d => d ? pad(d.getHours())+":"+pad(d.getMinutes()) : "";
+const dayKey = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const short = d => d.toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"});
+function dayLabel(d){
+  const t = new Date(); t.setHours(0,0,0,0);
+  const x = new Date(d); x.setHours(0,0,0,0);
+  const diff = Math.round((x - t)/86400000);
+  const base = x.toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long"});
+  if(diff === 0) return "Today · "+base;
+  if(diff === 1) return "Tomorrow · "+base;
+  return base;
+}
+const mins = ms => Math.round(ms/60000);
+function dur(m){
+  if(m < 1) return "0m";
+  const h = Math.floor(m/60), mm = m%60;
+  return (h? h+"h":"") + (h&&mm? " ":"") + (mm? mm+"m":"");
+}
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const SYM = {GBP:"£", EUR:"€", USD:"$", CHF:"CHF "};
+const money = (n, c) => (SYM[c]||c+" ") + Number(n).toLocaleString("en-GB",{minimumFractionDigits:2, maximumFractionDigits:2});
+
+const MOVE_TYPES = ["Flight","Train","Coach","Bus","Ferry","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
+const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
+const ICONS = {Flight:"✈",Train:"🚆",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
+  Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",Other:"•"};
+
+function sorted(){
+  return trip().legs.slice().map(l => ({l, s:parse(l.start), e:parse(l.end)}))
+    .sort((a,b) => (!a.s && !b.s) ? 0 : !a.s ? 1 : !b.s ? -1 : a.s - b.s);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const t = trip();
+  $("#tripName").textContent = t.name;
+  const spans = sorted();
+  $("#empty").hidden = spans.length > 0;
+  const list = $("#list"); list.innerHTML = "";
+  const now = new Date();
+
+  const dated = spans.filter(x => x.s);
+  if(dated.length){
+    const fmt = d => d.toLocaleDateString("en-GB",{day:"numeric", month:"short"});
+    const a = fmt(dated[0].s), b = fmt(dated[dated.length-1].s);
+    $("#tripSub").textContent = spans.length + (spans.length===1?" entry · ":" entries · ") + a + (a!==b ? " – "+b : "");
+  } else {
+    $("#tripSub").textContent = spans.length ? spans.length + " entries" : "Tap + to begin";
+  }
+
+  // focus: prefer journeys
+  const moves = spans.filter(x => x.l.kind !== "stop");
+  const pick = moves.find(x => x.s && x.e && now >= x.s && now <= x.e)
+            || moves.find(x => x.s && x.s > now)
+            || spans.find(x => x.s && x.e && now >= x.s && now <= x.e);
+  const f = $("#focus");
+  if(pick){
+    const live = pick.s && pick.e && now >= pick.s && now <= pick.e;
+    const title = pick.l.kind === "stop" ? (pick.l.place || pick.l.mode) : (pick.l.from||"?")+" → "+(pick.l.to||"?");
+    f.hidden = false;
+    f.innerHTML = live
+      ? '<div class="lab">In progress</div><div class="rt">'+esc(title)+'</div><div class="mt">Until '+hhmm(pick.e)+
+        (dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")+' · '+dur(mins(pick.e-now))+' to go</div>'
+      : '<div class="lab">Next up</div><div class="rt">'+esc(title)+'</div><div class="mt">'+
+        (dayKey(pick.s)===dayKey(now) ? "Today at " : dayLabel(pick.s).split(" · ")[0]+" at ")+hhmm(pick.s)+
+        ' · in '+dur(mins(pick.s-now))+'</div>';
+  } else f.hidden = true;
+
+  renderTotals();
+
+  let curDay = null, prevMove = null;
+  spans.forEach(x => {
+    const key = x.s ? dayKey(x.s) : "tbc";
+    if(key !== curDay){
+      curDay = key;
+      const h = document.createElement("div");
+      h.className = "dayhead";
+      h.innerHTML = "<span>"+esc(x.s ? dayLabel(x.s) : "Date to be confirmed")+"</span>";
+      list.appendChild(h);
+    }
+    if(x.l.kind !== "stop"){
+      if(prevMove && prevMove.e && x.s && dayKey(prevMove.e) === key){
+        const g = mins(x.s - prevMove.e);
+        if(g < 0){
+          const d = document.createElement("div");
+          d.className = "gap clash";
+          d.textContent = "⚠ Overlaps the previous journey by " + dur(-g);
+          list.appendChild(d);
+        } else if(g < 360){
+          const d = document.createElement("div");
+          d.className = "gap" + (g < 45 ? " tight" : "");
+          d.textContent = (g < 45 ? "⚠ " : "") + dur(g) + " in " + (prevMove.l.to || "between") + (g < 45 ? " — tight" : "");
+          list.appendChild(d);
+        }
+      }
+      prevMove = x;
+    }
+    list.appendChild(card(x, now));
+  });
+}
+
+function renderTotals(){
+  const byC = {};
+  trip().legs.forEach(l => {
+    const n = parseFloat(l.cost);
+    if(!isNaN(n) && n > 0){ const c = l.ccy || "GBP"; byC[c] = (byC[c]||0) + n; }
+  });
+  const keys = Object.keys(byC);
+  const el = $("#totals");
+  if(!keys.length){ el.hidden = true; return; }
+  el.hidden = false;
+  let h = '<span class="k">Total booked</span>' +
+          keys.map(c => '<span class="v">'+money(byC[c], c)+'</span>').join("");
+  if(keys.length > 1){
+    let gbp = 0, ok = true;
+    keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
+    if(ok) h += '<span class="approx">≈ '+money(gbp,"GBP")+' combined, at your saved rates</span>';
+  }
+  el.innerHTML = h;
+}
+
+function card(x, now){
+  const l = x.l, stop = l.kind === "stop";
+  const el = document.createElement("div");
+  let cls = "leg" + (stop ? " stop" : "");
+  if(x.e && now > x.e) cls += " done";
+  else if(x.s && x.e && now >= x.s && now <= x.e) cls += " live";
+  else if(x.s && x.s > now) cls += " next";
+  el.className = cls;
+
+  const sameDay = x.s && x.e && dayKey(x.s) === dayKey(x.e);
+  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div>'+
+          ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')+
+          '</div><div class="body">';
+
+  h += '<div class="route">' + (stop
+        ? esc(l.place || l.mode || "Stop")
+        : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?")) + '</div>';
+
+  const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
+  const cost = parseFloat(l.cost);
+  if(!isNaN(cost) && cost > 0) bits.push('<span class="chip money">'+money(cost, l.ccy||"GBP")+'</span>');
+  if(stop && x.s && x.e && !sameDay){
+    const nights = Math.round((new Date(x.e.getFullYear(),x.e.getMonth(),x.e.getDate()) -
+                               new Date(x.s.getFullYear(),x.s.getMonth(),x.s.getDate()))/86400000);
+    bits.push('<span>Out '+short(x.e)+', '+hhmm(x.e)+'</span>');
+    bits.push('<span>'+nights+(nights===1?" night":" nights")+'</span>');
+  } else if(x.s && x.e){
+    const d = mins(x.e - x.s);
+    if(d >= 0) bits.push('<span>'+dur(d)+'</span>');
+  }
+  if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
+  h += '<div class="meta">'+bits.join("")+'</div>';
+
+  if(l.notes) h += '<div class="notes">'+esc(l.notes)+'</div>';
+
+  const links = (l.links||[]).filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()));
+  if(links.length) h += '<div class="links">'+links.map(a =>
+    '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
+
+  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
+  el.innerHTML = h;
+  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  return el;
+}
+
+/* ---------- entry sheet ---------- */
+let editing = null, kind = "move";
+
+function setKind(k){
+  kind = k;
+  document.querySelectorAll("#kindSeg button").forEach(b => b.classList.toggle("on", b.dataset.kind === k));
+  $("#rowMove").hidden = k !== "move";
+  $("#rowStop").hidden = k !== "stop";
+  $("#lblStart").textContent = k === "move" ? "Departs" : "Starts / check in";
+  $("#lblEnd").textContent   = k === "move" ? "Arrives" : "Ends / check out";
+  const types = k === "move" ? MOVE_TYPES : STOP_TYPES;
+  const cur = $("#f_mode").value;
+  $("#f_mode").innerHTML = types.map(t => '<option>'+t+'</option>').join("");
+  if(types.indexOf(cur) > -1) $("#f_mode").value = cur;
+}
+
+function linkRow(label, url){
+  const r = document.createElement("div");
+  r.className = "linkrow";
+  r.innerHTML = '<input placeholder="Label" value="'+esc(label||"")+'" autocomplete="off">'+
+                '<input placeholder="URL or app link" value="'+esc(url||"")+'" autocomplete="off" spellcheck="false" inputmode="url">'+
+                '<button type="button" aria-label="Remove">×</button>';
+  r.querySelector("button").addEventListener("click", () => r.remove());
+  $("#linkRows").appendChild(r);
+  return r;
+}
+
+function openSheet(id){
+  editing = id || null;
+  const l = id ? trip().legs.find(z => z.id === id) : null;
+  $("#sheetTitle").textContent = l ? "Edit entry" : "Add entry";
+  setKind(l ? (l.kind || "move") : "move");
+  $("#f_mode").value  = l ? (l.mode || (l.kind==="stop"?"Hotel":"Other")) : (kind==="move" ? "Train" : "Hotel");
+  $("#f_from").value  = l ? (l.from || "") : "";
+  $("#f_to").value    = l ? (l.to || "") : "";
+  $("#f_place").value = l ? (l.place || "") : "";
+  $("#f_start").value = l ? (l.start || "") : defaultStart();
+  $("#f_end").value   = l ? (l.end || "") : "";
+  $("#f_cost").value  = l && l.cost != null ? l.cost : "";
+  $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
+  $("#f_ref").value   = l ? (l.ref || "") : "";
+  $("#f_notes").value = l ? (l.notes || "") : "";
+  $("#linkRows").innerHTML = "";
+  ((l && l.links) || []).forEach(a => linkRow(a.label, a.url));
+  $("#delBtn").hidden = !l;
+  show("#sheet");
+}
+
+function defaultStart(){
+  const s = sorted();
+  const last = s.length ? s[s.length-1] : null;
+  if(last && last.l.end) return last.l.end;
+  if(last && last.l.start) return last.l.start;
+  const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1);
+  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":00";
+}
+
+function collect(){
+  const links = [...document.querySelectorAll("#linkRows .linkrow")].map(r => {
+    const i = r.querySelectorAll("input");
+    return {label:i[0].value.trim(), url:i[1].value.trim()};
+  }).filter(a => a.url);
+  const c = parseFloat($("#f_cost").value);
+  return {
+    kind, mode:$("#f_mode").value,
+    from:$("#f_from").value.trim(), to:$("#f_to").value.trim(), place:$("#f_place").value.trim(),
+    start:$("#f_start").value, end:$("#f_end").value,
+    cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
+    ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links
+  };
+}
+
+function show(sel){ $(sel).classList.add("on"); $("#scrim").classList.add("on"); }
+function hideAll(){ document.querySelectorAll(".sheet").forEach(s => s.classList.remove("on")); $("#scrim").classList.remove("on"); }
+let tt;
+function toast(msg){
+  const el = $("#toast"); el.textContent = msg; el.classList.add("on");
+  clearTimeout(tt); tt = setTimeout(() => el.classList.remove("on"), 2200);
+}
+
+/* ---------- trips sheet ---------- */
+function renderTrips(){
+  const box = $("#tripList"); box.innerHTML = "";
+  store.trips.forEach(t => {
+    const ds = t.legs.map(l => parse(l.start)).filter(Boolean).sort((a,b) => a-b);
+    const byC = {};
+    t.legs.forEach(l => { const n = parseFloat(l.cost); if(!isNaN(n) && n>0){ const c = l.ccy||"GBP"; byC[c] = (byC[c]||0)+n; }});
+    const totals = Object.keys(byC).map(c => money(byC[c], c)).join(" · ");
+    const dates = ds.length
+      ? ds[0].toLocaleDateString("en-GB",{day:"numeric",month:"short"}) +
+        (dayKey(ds[0]) !== dayKey(ds[ds.length-1]) ? " – " + ds[ds.length-1].toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "")
+      : "No dates yet";
+    const row = document.createElement("div");
+    row.className = "triprow" + (t.id === store.active ? " active" : "");
+    row.innerHTML = '<button>'+esc(t.name)+'<small>'+esc(dates)+' · '+t.legs.length+
+      (t.legs.length===1?" entry":" entries")+(totals? " · "+esc(totals):"")+'</small></button>'+
+      '<button class="more" aria-label="Options">•••</button>';
+    const [open, more] = row.querySelectorAll("button");
+    open.addEventListener("click", () => { store.active = t.id; save(); render(); hideAll(); });
+    more.addEventListener("click", () => tripActions(t));
+    box.appendChild(row);
+  });
+}
+
+function tripActions(t){
+  const a = prompt('"'+t.name+'"\n\nType:  R = rename,  D = duplicate,  X = delete', "R");
+  if(!a) return;
+  const c = a.trim().toUpperCase()[0];
+  if(c === "R"){
+    const n = prompt("New name", t.name);
+    if(n && n.trim()){ t.name = n.trim(); save(); render(); renderTrips(); }
+  } else if(c === "D"){
+    const copy = {id:uid(), name:t.name+" (copy)", legs:t.legs.map(l => Object.assign({}, l, {id:uid()}))};
+    store.trips.push(copy); save(); renderTrips(); toast("Duplicated");
+  } else if(c === "X"){
+    if(store.trips.length === 1){ toast("That's your only itinerary"); return; }
+    if(!confirm('Delete "'+t.name+'" and all its entries?')) return;
+    store.trips = store.trips.filter(z => z.id !== t.id);
+    if(store.active === t.id) store.active = store.trips[0].id;
+    save(); render(); renderTrips(); toast("Deleted");
+  }
+}
+
+/* ---------- events ---------- */
+$("#fab").addEventListener("click", () => openSheet(null));
+$("#scrim").addEventListener("click", hideAll);
+$("#cancelBtn").addEventListener("click", hideAll);
+$("#menuBtn").addEventListener("click", () => {
+  const r = store.rate;
+  $("#rateNow").textContent = "€1 = " + r.EUR + " · $1 = " + r.USD + " · CHF 1 = " + r.CHF;
+  show("#menu");
+});
+$("#menuClose").addEventListener("click", hideAll);
+$("#tripsClose").addEventListener("click", hideAll);
+$("#tripBtn").addEventListener("click", () => { renderTrips(); show("#trips"); });
+$("#newTrip").addEventListener("click", () => {
+  const n = prompt("Name this itinerary", "");
+  if(n === null) return;
+  const t = newTrip(n.trim() || "New itinerary");
+  store.trips.push(t); store.active = t.id;
+  save(); render(); hideAll(); toast("Created");
+});
+
+document.querySelectorAll("#kindSeg button").forEach(b =>
+  b.addEventListener("click", () => setKind(b.dataset.kind)));
+
+$("#saveBtn").addEventListener("click", () => {
+  const d = collect();
+  if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return; }
+  if(d.kind === "stop" && !d.place){ toast("Add a place first"); return; }
+  if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
+  else trip().legs.push(Object.assign({id:uid()}, d));
+  save(); render(); hideAll();
+  toast(editing ? "Updated" : "Added");
+});
+
+$("#delBtn").addEventListener("click", () => {
+  if(!editing || !confirm("Delete this entry?")) return;
+  const t = trip();
+  t.legs = t.legs.filter(z => z.id !== editing);
+  save(); render(); hideAll(); toast("Deleted");
+});
+
+document.querySelectorAll(".quick button").forEach(b => {
+  b.addEventListener("click", () => {
+    const [label, url] = b.dataset.add.split("|");
+    linkRow(label, url).querySelectorAll("input")[1].focus();
+  });
+});
+
+$("#mRate").addEventListener("click", () => {
+  const e = prompt("How many pounds is €1?", store.rate.EUR);
+  if(e !== null && !isNaN(parseFloat(e))) store.rate.EUR = parseFloat(e);
+  const u = prompt("How many pounds is $1?", store.rate.USD);
+  if(u !== null && !isNaN(parseFloat(u))) store.rate.USD = parseFloat(u);
+  const f = prompt("How many pounds is CHF 1?", store.rate.CHF);
+  if(f !== null && !isNaN(parseFloat(f))) store.rate.CHF = parseFloat(f);
+  save(); render(); hideAll(); toast("Rates saved");
+});
+
+$("#mExport").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(store,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "itineraries-backup.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  hideAll();
+});
+
+$("#mImport").addEventListener("click", () => $("#fileIn").click());
+$("#fileIn").addEventListener("change", e => {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const p = JSON.parse(r.result);
+      if(p && Array.isArray(p.trips)){
+        store = p;
+        if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
+      } else if(p && Array.isArray(p.legs)){           // old single-trip backup
+        const t = newTrip(p.trip || "Restored trip");
+        t.legs = p.legs.map(l => Object.assign({kind:"move", cost:null, ccy:"GBP"}, l));
+        store = blank(); store.trips = [t];
+      } else throw 0;
+      store.trips.forEach(t => { if(!t.id) t.id = uid(); t.legs.forEach(l => { if(!l.id) l.id = uid(); if(!l.kind) l.kind = "move"; }); });
+      if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
+      save(); render(); hideAll(); toast("Restored " + store.trips.length + " itineraries");
+    }catch(err){ toast("That file didn't look right"); }
+  };
+  r.readAsText(file);
+  e.target.value = "";
+});
+
+$("#mText").addEventListener("click", () => {
+  const t = trip();
+  let out = t.name + "\n\n", cur = null;
+  sorted().forEach(x => {
+    const l = x.l, k = x.s ? dayKey(x.s) : "tbc";
+    if(k !== cur){ cur = k; out += (x.s ? dayLabel(x.s) : "Date TBC") + "\n"; }
+    const c = parseFloat(l.cost);
+    out += "  " + (x.s ? hhmm(x.s) : "--:--") + (x.e ? "–"+hhmm(x.e) : "") + "  " +
+           (l.kind === "stop" ? (l.place||l.mode) : (l.from||"?")+" → "+(l.to||"?")) +
+           (l.ref ? "  ("+l.ref+")" : "") +
+           (!isNaN(c) && c > 0 ? "  " + money(c, l.ccy||"GBP") : "") + "\n";
+  });
+  const done = () => { hideAll(); toast("Copied to clipboard"); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(out).then(done, () => { prompt("Copy:", out); hideAll(); });
+  } else { prompt("Copy:", out); hideAll(); }
+});
+
+$("#mClear").addEventListener("click", () => {
+  if(!confirm('Delete every entry in "'+trip().name+'"? This cannot be undone.')) return;
+  trip().legs = []; save(); render(); hideAll(); toast("Cleared");
+});
+
+document.addEventListener("visibilitychange", () => { if(!document.hidden) render(); });
+setInterval(render, 60000);
+render();
+})();
+</script>
+</body>
+</html>
