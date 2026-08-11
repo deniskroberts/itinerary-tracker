@@ -87,8 +87,14 @@
   .times .a{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
   .times .b{font-size:13.5px; color:var(--tx3); font-variant-numeric:tabular-nums; margin-top:2px}
   .times .b::before{content:"↓ "; font-size:11px}
-  .times .a.lead{color:#c3b0ff}
-  .times .b.dep::before{content:"→ "}
+  .cue{
+    font-size:12px; color:#c3b0ff; font-variant-numeric:tabular-nums;
+    padding:5px 0 5px 12px; margin-left:8px; line-height:1.35;
+    border-left:2px solid #4a3f7a;
+  }
+  .cue.before{margin-bottom:2px}
+  .cue.after{margin-top:2px}
+  .leg + .cue.before{margin-top:8px}
   .body{flex:1; min-width:0}
   .route{font-size:16px; font-weight:620; letter-spacing:-.01em; word-break:break-word}
   .route .ar{color:var(--tx3); font-weight:400; margin:0 5px}
@@ -201,6 +207,19 @@
   }
   .seg button.on{background:var(--accent); color:#04121f; font-weight:700}
 
+  /* label on its own line so the picker and the remove button always fit */
+  .cuerow{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;
+    padding:9px; border:1px solid var(--line); border-radius:12px; background:var(--card);
+  }
+  .cuerow input{background:var(--bg2); min-width:0}
+  .cuerow .cl{flex:1 1 100%}
+  .cuerow .ct{flex:1 1 0; min-width:0; font-size:15px; padding:9px 10px}
+  .cuerow button{
+    flex:0 0 42px; background:var(--bg2); border:1px solid var(--line);
+    color:var(--tx3); border-radius:11px; font-size:17px;
+  }
+
   .linkrow{display:flex; gap:8px; margin-top:8px}
   .linkrow input:first-child{flex:0 0 34%}
   .linkrow button{flex:0 0 40px; background:var(--card); border:1px solid var(--line); color:var(--tx3); border-radius:11px; font-size:17px}
@@ -290,21 +309,16 @@
   <input id="f_end" type="datetime-local">
 
   <div id="rowBoard" hidden>
-    <label for="f_therby">Be at the terminal by <span class="opt">(optional — governs when you must leave home)</span></label>
-    <input id="f_thereby" type="datetime-local">
-    <div class="quick" id="leadRow">
-      <button type="button" data-lead="180">−3h long-haul</button>
-      <button type="button" data-lead="150">−2h30 bag drop</button>
-      <button type="button" data-lead="120">−2h hand bag</button>
-      <button type="button" data-lead="90">−1h30 domestic</button>
-      <button type="button" data-lead="20">−20m train</button>
+    <label>Buffers and deadlines <span class="opt">(optional — anything you must do before or after)</span></label>
+    <div id="cueRows"></div>
+    <div class="quick" id="cuePresets">
+      <button type="button" data-cue="there">+ Be there</button>
+      <button type="button" data-cue="bag">+ Bag drop</button>
+      <button type="button" data-cue="gate">+ Gate / all aboard</button>
+      <button type="button" data-cue="off">+ Off and clear</button>
+      <button type="button" data-cue="blank">+ Custom</button>
     </div>
-    <div class="hint" id="leadHint"></div>
-
-    <label for="f_boardby">Gate closes / all aboard by <span class="opt">(optional — the last moment)</span></label>
-    <input id="f_boardby" type="datetime-local">
-    <label for="f_offat">Disembarking at <span class="opt">(optional — when you expect to be off)</span></label>
-    <input id="f_offat" type="datetime-local">
+    <div class="hint">Presets fill a sensible time from the ones above — change any of them. Anything at or before the departure shows above the card; anything after the arrival shows below it.</div>
   </div>
 
   <div id="rowAboard" hidden>
@@ -376,7 +390,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "1.7";
+const APP_VERSION = "2.0";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -421,6 +435,20 @@ store.trips.forEach(t => {
     delete l.stops;
   });
   if(born.length){ t.legs.push.apply(t.legs, born); migrated = true; }
+  // v1.9: the fixed boarding fields become a list you can add to
+  t.legs.forEach(l => {
+    if(l.thereBy || l.boardBy || l.offAt){
+      l.cues = l.cues || [];
+      const w = (l.mode === "Cruise" || l.mode === "Ferry") ? ["Be aboard","All aboard","Off the ship"]
+              : l.mode === "Flight" ? ["Be at the terminal","Gate closes","Off and clear"]
+              : ["Be there","Doors close","Off"];
+      if(l.thereBy) l.cues.push({label:w[0], at:l.thereBy});
+      if(l.boardBy) l.cues.push({label:w[1], at:l.boardBy});
+      if(l.offAt)   l.cues.push({label:w[2], at:l.offAt});
+      delete l.thereBy; delete l.boardBy; delete l.offAt;
+      migrated = true;
+    }
+  });
 });
 if(migrated) try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
 if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
@@ -491,8 +519,14 @@ function isSpan(x, all){
   return all.some(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.s >= x.s && y.s <= x.e);
 }
 // the time you act on, as against the time the vehicle moves
-const startOf = x => (x.l.kind === "move" ? (parse(x.l.thereBy) || parse(x.l.boardBy)) : null) || x.s;
-const endOf   = x => (x.l.kind === "move" && x.l.offAt   ? parse(x.l.offAt)   : null) || x.e;
+function startOf(x){
+  if(x.l.kind === "move"){ const b = cuesFor(x, "before"); if(b.length) return b[0].t; }
+  return x.s;
+}
+function endOf(x){
+  if(x.l.kind === "move"){ const a = cuesFor(x, "after"); if(a.length) return a[a.length-1].t; }
+  return x.e;
+}
 const spanFrom = s => { const a = startOf(s), b = s.s; return (a && b && a < b) ? a : b; };
 const spanTo   = s => { const a = endOf(s),   b = s.e; return (a && b && a > b) ? a : b; };
 const encloses = (span, t) => {
@@ -615,14 +649,18 @@ function render(){
 
     if(it.type === "board" || it.type === "disembark"){
       rail = null;                       // board/disembark cap the rail, they don't sit in it
-      if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
+      if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day && cuesFor(it.x, "before").length){
         const g = mins(it.t - prevEnd);
         if(g < 0) list.appendChild(gapRow("clash", "⚠ You'd arrive " + dur(-g) + " after boarding closes"));
         else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
           (g < 45 ? "⚠ " : "") + dur(g) + " to board" + (g < 45 ? " — tight" : "")));
       }
+      if(it.type === "board"){ const c = beforeCue(it.x); if(c) list.appendChild(c); }
       list.appendChild(anchor(it, now));
-      if(it.type === "disembark"){ prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || ""; }
+      if(it.type === "disembark"){
+        const c = afterCue(it.x); if(c) list.appendChild(c);
+        prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || "";
+      }
     } else if(it.x.l.kind === "port"){
       box().appendChild(portRow(it.x, now));
     } else {
@@ -630,7 +668,7 @@ function render(){
       if(it.x.l.kind === "move" && !it.span){
         if(prevEnd && it.t && dayKey(prevEnd) === day){
           const g = mins(it.t - prevEnd);
-          const deadline = !!(it.x.l.thereBy || it.x.l.boardBy);
+          const deadline = cuesFor(it.x, "before").length > 0;
           if(g < 0) list.appendChild(gapRow("clash", deadline
             ? "⚠ You'd get there " + dur(-g) + " late"
             : "⚠ Overlaps the previous journey by " + dur(-g)));
@@ -641,9 +679,13 @@ function render(){
         }
         prevEnd = endOf(it.x); prevTo = it.x.l.to || "";
       }
+      const before = it.x.l.kind === "move" ? beforeCue(it.x) : null;
+      if(before){ if(it.port) before.classList.add("nested"); box().appendChild(before); }
       const el = card(it.x, now);
       if(it.port) el.classList.add("nested");
       box().appendChild(el);
+      const after = it.x.l.kind === "move" ? afterCue(it.x) : null;
+      if(after){ if(it.port) after.classList.add("nested"); box().appendChild(after); }
       // back-aboard check for anything ashore during a port call
       if(it.port){
         const by = aboardBy(it.port), ends = it.x.e || it.x.s;
@@ -657,6 +699,39 @@ function render(){
     prevItem = it;
   });
 }
+
+// wording that fits how you actually board the thing
+function cueWords(mode){
+  if(mode === "Cruise" || mode === "Ferry") return {where:"the port",     last:"all aboard",  off:"Off the ship by"};
+  if(mode === "Flight")                     return {where:"the terminal", last:"gate closes", off:"Off and clear by"};
+  if(mode === "Train" || mode === "Coach" || mode === "Bus")
+                                            return {where:"the platform", last:"doors close", off:"Off by"};
+  return {where:"", last:"last call", off:"Off by"};
+}
+
+function cueRow(text, where){
+  const d = document.createElement("div");
+  d.className = "cue " + (where || "");
+  d.textContent = text;
+  return d;
+}
+
+// a cue belongs above the card if it lands at or before departure, below it otherwise
+function cuesFor(x, side){
+  return (x.l.cues || []).map(c => ({c:c, t:parse(c.at)})).filter(z => z.t)
+    .filter(z => (x.s && z.t <= x.s) ? side === "before"
+               : (x.e && z.t >= x.e) ? side === "after"
+               : side === "before")
+    .sort((a,b) => a.t - b.t);
+}
+
+function cueBand(x, side){
+  const list = cuesFor(x, side);
+  if(!list.length) return null;
+  return cueRow("⏱ " + list.map(z => (z.c.label ? z.c.label + " " : "") + hhmm(z.t)).join(" · "), side);
+}
+const beforeCue = x => cueBand(x, "before");
+const afterCue  = x => cueBand(x, "after");
 
 function gapRow(cls, text){
   const d = document.createElement("div");
@@ -678,8 +753,7 @@ function anchor(it, now){
   const el = document.createElement("div");
   el.className = "leg anchor" + (boarding ? " board" : " disembark") +
                  ((boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "");
-  const when = it.t;
-  const shipTime = boarding ? x.s : x.e;
+  const when = boarding ? x.s : x.e;
   const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
 
   let h = '<div class="times"><div class="a">'+(when?hhmm(when):"—")+'</div></div><div class="body">';
@@ -687,13 +761,6 @@ function anchor(it, now){
   h += '<div class="route">'+esc(where)+'</div>';
 
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
-  if(boarding && l.boardBy && l.thereBy){
-    const bb = parse(l.boardBy);
-    if(bb && hhmm(bb) !== hhmm(when)) bits.push('<span class="chip ship">all aboard '+hhmm(bb)+'</span>');
-  }
-  if(shipTime && when && hhmm(shipTime) !== hhmm(when)){
-    bits.push('<span class="chip ship">'+(boarding ? "sails " : "arrives ")+hhmm(shipTime)+'</span>');
-  }
   if(boarding){
     const c = parseFloat(l.cost);
     if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
@@ -771,11 +838,8 @@ function card(x, now){
   el.className = cls;
 
   const sameDay = x.s && x.e && dayKey(x.s) === dayKey(x.e);
-  const lead = (!stop && l.kind === "move") ? (parse(l.thereBy) || null) : null;
-  let h = '<div class="times">' +
-          (lead ? '<div class="a lead">'+hhmm(lead)+'</div><div class="b dep">'+hhmm(x.s)+'</div>'
-                : '<div class="a">'+(x.s?hhmm(x.s):"—")+'</div>' +
-                  ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')) +
+  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div>'+
+          ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')+
           '</div><div class="body">';
 
   h += '<div class="route">' + (stop
@@ -795,7 +859,6 @@ function card(x, now){
     const d = mins(x.e - x.s);
     if(d >= 0) bits.push('<span>'+dur(d)+'</span>');
   }
-  if(l.boardBy){ const bb = parse(l.boardBy); if(bb) bits.push('<span class="chip ship">gate '+hhmm(bb)+'</span>'); }
   if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   h += '<div class="meta">'+bits.join("")+'</div>';
 
@@ -832,6 +895,25 @@ function setKind(k){
   if(types.indexOf(cur) > -1) $("#f_mode").value = cur;
 }
 
+function cueRowEditor(c){
+  c = c || {};
+  const r = document.createElement("div");
+  r.className = "cuerow";
+  r.innerHTML = '<input class="cl" placeholder="What has to happen" value="'+esc(c.label||"")+'" autocomplete="off">'+
+                '<input class="ct" type="datetime-local" value="'+esc(c.at||"")+'">'+
+                '<button type="button" aria-label="Remove">×</button>';
+  r.querySelector("button").addEventListener("click", () => r.remove());
+  $("#cueRows").appendChild(r);
+  return r;
+}
+
+function readCues(){
+  return [...document.querySelectorAll("#cueRows .cuerow")].map(r => ({
+    label: r.querySelector(".cl").value.trim(),
+    at:    r.querySelector(".ct").value
+  })).filter(c => c.at).sort((a,b) => a.at.localeCompare(b.at));
+}
+
 function linkRow(label, url){
   const r = document.createElement("div");
   r.className = "linkrow";
@@ -857,10 +939,8 @@ function openSheet(id){
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
   $("#f_aboard").value = l ? (l.aboard || "") : "";
-  $("#f_boardby").value = l ? (l.boardBy || "") : "";
-  $("#f_thereby").value = l ? (l.thereBy || "") : "";
-  showLead();
-  $("#f_offat").value   = l ? (l.offAt || "") : "";
+  $("#cueRows").innerHTML = "";
+  ((l && l.cues) || []).forEach(c => cueRowEditor(c));
   $("#f_ref").value   = l ? (l.ref || "") : "";
   $("#f_notes").value = l ? (l.notes || "") : "";
   $("#linkRows").innerHTML = "";
@@ -881,13 +961,40 @@ function syncEnd(quiet){
   }
 }
 
+const stamp = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+
+// typical length of each kind of thing, in minutes — only ever used to open the
+// picker somewhere sensible, never to fill a time you haven't looked at
+const TYPICAL = {
+  Flight:120, Train:90, Cruise:7*1440, Ferry:240, Coach:180, Bus:45, Taxi:30, Car:60,
+  "Tube / Metro":30, Walk:20, Transfer:30,
+  Restaurant:120, "Spa / massage":90, Activity:120, Tour:180, "Show / event":150, Meeting:60,
+  "Port call":540, "Tender port":480, "Sea day":1440, Other:60
+};
+
+// when you open the arrival picker on an empty field, start it just after departure
+function suggestEnd(){
+  const s = parse($("#f_start").value), e = $("#f_end");
+  if(!s || e.value) return;
+  const mode = $("#f_mode").value;
+  let t;
+  if(mode === "Hotel" || mode === "Apartment"){
+    t = new Date(s); t.setDate(t.getDate() + 1); t.setHours(10, 0, 0, 0);
+    if(t <= s) t = new Date(s.getTime() + 60*60000);
+  } else {
+    t = new Date(s.getTime() + (TYPICAL[mode] || 60)*60000);
+  }
+  e.value = stamp(t);
+  syncEnd(true);
+}
+
 function defaultStart(){
   const s = sorted();
   const last = s.length ? s[s.length-1] : null;
   if(last && last.l.end) return last.l.end;
   if(last && last.l.start) return last.l.start;
   const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1);
-  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":00";
+  return stamp(d);
 }
 
 function collect(){
@@ -903,9 +1010,7 @@ function collect(){
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
     ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
     aboard: kind === "port" ? $("#f_aboard").value : "",
-    boardBy: kind === "move" ? $("#f_boardby").value : "",
-    thereBy: kind === "move" ? $("#f_thereby").value : "",
-    offAt:   kind === "move" ? $("#f_offat").value   : ""
+    cues: kind === "move" ? readCues() : []
   };
 }
 
@@ -982,29 +1087,9 @@ $("#newTrip").addEventListener("click", () => {
 document.querySelectorAll("#kindSeg button").forEach(b =>
   b.addEventListener("click", () => setKind(b.dataset.kind)));
 
-function showLead(){
-  const dep = parse($("#f_start").value), there = parse($("#f_thereby").value);
-  const el = $("#leadHint");
-  if(dep && there){
-    const m = mins(dep - there);
-    el.textContent = m >= 0 ? "That's " + dur(m) + " before departure." : "That's after it leaves.";
-  } else {
-    el.textContent = "Tap a preset to set this from the departure time.";
-  }
-}
-document.querySelectorAll("#leadRow button").forEach(b => {
-  b.addEventListener("click", () => {
-    const dep = parse($("#f_start").value);
-    if(!dep){ toast("Set the departure time first"); return; }
-    const t = new Date(dep.getTime() - (+b.dataset.lead)*60000);
-    $("#f_thereby").value = t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate())+"T"+pad(t.getHours())+":"+pad(t.getMinutes());
-    showLead();
-  });
-});
-["input","change"].forEach(ev => {
-  $("#f_thereby").addEventListener(ev, showLead);
-  $("#f_start").addEventListener(ev, showLead);
-});
+// opening an empty arrival picker starts it just after the departure
+["focus","click"].forEach(ev => $("#f_end").addEventListener(ev, suggestEnd));
+$("#f_mode").addEventListener("change", suggestEnd);
 
 ["input","change"].forEach(ev => {
   $("#f_start").addEventListener(ev, () => syncEnd(false));
@@ -1014,15 +1099,35 @@ document.querySelectorAll("#leadRow button").forEach(b => {
   });
 });
 
+const CUE_PRESETS = {
+  there: {mins:-150, after:false, label:l => "Be at " + (l || "the terminal")},
+  bag:   {mins:-60,  after:false, label:() => "Bag drop closes"},
+  gate:  {mins:-30,  after:false, label:(l, mode) => (mode === "Cruise" || mode === "Ferry") ? "All aboard" : "Gate closes"},
+  off:   {mins:40,   after:true,  label:(l, mode) => (mode === "Cruise" || mode === "Ferry") ? "Off the ship" : "Off and clear"},
+  blank: {mins:0,    after:false, label:() => ""}
+};
+
+document.querySelectorAll("#cuePresets button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.cue, pre = CUE_PRESETS[key];
+    const base = parse(pre.after ? $("#f_end").value : $("#f_start").value);
+    let at = "";
+    if(base && key !== "blank"){
+      at = stamp(new Date(base.getTime() + pre.mins*60000));
+    } else if(key !== "blank"){
+      toast(pre.after ? "Set the arrival time first" : "Set the departure time first");
+      return;
+    }
+    const r = cueRowEditor({label: pre.label($("#f_from").value.trim(), $("#f_mode").value), at: at});
+    r.querySelector(key === "blank" ? ".cl" : ".ct").focus();
+  });
+});
+
 function commit(){
   const d = collect();
   if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return false; }
   if(d.kind !== "move" && !d.place){ toast(d.kind === "port" ? "Name the port first" : "Add a place first"); return false; }
   if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return false; }
-  if(d.boardBy && d.start && d.boardBy > d.start){ toast("Boarding can't be after it departs"); return false; }
-  if(d.thereBy && d.start && d.thereBy > d.start){ toast("You'd get there after it leaves"); return false; }
-  if(d.thereBy && d.boardBy && d.thereBy > d.boardBy){ toast("You'd get there after the gate closes"); return false; }
-  if(d.offAt && d.end && d.offAt < d.end){ toast("You can't get off before it arrives"); return false; }
   if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
   else trip().legs.push(Object.assign({id:uid()}, d));
   save(); render();
