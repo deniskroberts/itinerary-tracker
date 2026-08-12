@@ -15,7 +15,7 @@
     --bg:#0b1017; --bg2:#121a24; --card:#161f2b; --line:#25313f;
     --tx:#e8eef6; --tx2:#9aa9bb; --tx3:#6b7c90;
     --accent:#4da3ff; --good:#3ecf8e; --warn:#f5a623; --bad:#ff6b6b; --stay:#b388ff;
-    --r:14px;
+    --r:14px; --gut:52px; --pad:14px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   [hidden]{display:none !important}   /* our display:flex rules would otherwise beat the default */
@@ -79,35 +79,49 @@
   .dayhead:first-child{margin-top:0}
   .dayhead::after{content:""; flex:1; height:1px; background:var(--line)}
 
-  .leg{
+  /* the unit is the whole object: cues in front, the card, cues behind */
+  .unit{
     background:var(--card); border:1px solid var(--line); border-radius:var(--r);
-    padding:12px 13px; display:flex; gap:12px; position:relative; overflow:hidden;
+    position:relative; overflow:hidden;
   }
-  .leg::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--line)}
-  .leg.done{opacity:.58}
-  .leg.done::before{background:var(--tx3)}
-  .leg.live::before{background:var(--good)}
-  .leg.next::before{background:var(--accent)}
-  .leg.stop{background:#1a1a2b; border-color:#2e2a45}
-  .leg.stop::before{background:var(--stay)}
-  .leg.stop.done::before{background:var(--tx3)}
-  .leg + .leg{margin-top:8px}
-  .times{flex:0 0 52px; text-align:right; padding-top:1px}
+  .unit::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--line); z-index:1}
+  .unit + .unit{margin-top:8px}
+  .unit.done{opacity:.58}
+  .unit.done::before{background:var(--tx3)}
+  .unit.live::before{background:var(--good)}
+  .unit.next::before{background:var(--accent)}
+  .unit.stop{background:#1a1a2b; border-color:#2e2a45}
+  .unit.stop::before{background:var(--stay)}
+  .unit.stop.done::before{background:var(--tx3)}
+  .unit.provisional{border-style:dashed}
+
+  .leg{
+    background:none; border:0; border-radius:0;
+    padding:12px 13px; display:flex; gap:12px; position:relative;
+    flex-wrap:wrap;
+  }
+  .times{flex:0 0 var(--gut); text-align:right; padding-top:1px}
   .times .a{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
-  .times .b{font-size:13.5px; color:var(--tx3); font-variant-numeric:tabular-nums; margin-top:2px}
-  .times .b::before{content:"↓ "; font-size:11px}
-  .cue{
-    font-size:12px; color:#c3b0ff; font-variant-numeric:tabular-nums;
-    padding:5px 0 5px 12px; margin-left:8px; line-height:1.35;
-    border-left:2px solid #4a3f7a;
+  .endrow{
+    flex:1 1 100%; display:flex; gap:12px; align-items:baseline;
+    margin-top:10px; padding-top:9px; border-top:1px solid var(--line);
   }
-  .cue.hashard{border-left-color:#6b5426}
-  .cue .hard{color:var(--warn); font-weight:650}
-  .cue .soft{color:#c3b0ff}
-  .cue .conn{color:#7fb3dc}
-  .cue.before{margin-bottom:2px}
-  .cue.after{margin-top:2px}
-  .leg + .cue.before{margin-top:8px}
+  .endrow .t{flex:0 0 var(--gut); text-align:right; font-size:15px; font-weight:640;
+    color:var(--tx2); font-variant-numeric:tabular-nums}
+  .endrow .d{font-size:12.5px; color:var(--tx3)}
+  .cue{background:rgba(255,255,255,.022); padding:8px 13px 8px 0}
+  .cue.before{border-bottom:1px solid var(--line)}
+  .cue.after{border-top:1px solid var(--line)}
+  .cline{display:flex; gap:12px; align-items:baseline; padding:3px 0 3px 13px;
+    font-size:12.5px; line-height:1.35}
+  .cline .t{flex:0 0 var(--gut); text-align:right; font-variant-numeric:tabular-nums; font-weight:650}
+  .cline .w{flex:1 1 auto; min-width:0}
+  .cline.soft{color:#c3b0ff}
+  .cline.hard{color:var(--warn)}
+  .cline.hard .t{font-weight:750}
+  .cline.conn{color:#7fb3dc}
+  .cline.conn .t::before{content:"+"}
   .body{flex:1; min-width:0}
   .route{font-size:16px; font-weight:620; letter-spacing:-.01em; word-break:break-word}
   .route .ar{color:var(--tx3); font-weight:400; margin:0 5px}
@@ -119,7 +133,7 @@
   .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
   .chip.done{background:#152a20; border-color:#25452f; color:#6fc79b}
   .chip.todo{background:none; border-style:dashed; color:var(--tx3)}
-  .leg.provisional{border-style:dashed}
+  .chip.crit{background:#3a1f22; border-color:#5e2f33; color:#ff9b9b; font-weight:700}
   .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
   .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
@@ -129,7 +143,11 @@
     border-radius:9px; padding:6px 10px; font-size:12.5px; font-weight:620;
   }
   .links a:active{background:#24344a}
-  .rowbtns{display:flex; gap:6px; margin-top:10px}
+  .tickbtn.on{border-color:#25452f; color:#7fdcae; background:#152a20}
+  .endrow.tickrow .t{color:#7fdcae}
+  .endrow.tickrow .d{color:#6fc79b}
+  .unit.done .tickbtn.on{opacity:1}
+  .rowbtns{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
   .rowbtns button{
     background:none; border:1px solid var(--line); color:var(--tx3);
     border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
@@ -142,38 +160,47 @@
   }
   .rail > * + *{margin-top:8px}
   .rail .nested{margin-left:16px}
+  .rail .unit + .unit{margin-top:0}
   .sea{
     font-size:12px; color:var(--tx3); letter-spacing:.03em;
-    padding:9px 2px; font-style:italic;
+    padding:9px 2px 9px calc(var(--pad) + var(--gut) + 12px); font-style:italic;
   }
   .sea::before{content:"🌊  "; font-style:normal}
 
-  .leg.anchor{background:#171b2e; border-color:#33305c}
-  .leg.anchor::before{background:var(--stay); width:9px}
-  .leg.anchor.board{border-bottom-left-radius:0}
-  .leg.anchor.disembark{border-top-left-radius:0}
+  .unit.anchor{background:#171b2e; border-color:#33305c}
+  .unit.anchor::before{background:var(--stay); width:9px}
+  .unit.anchor.board{border-bottom-left-radius:0}
+  .unit.anchor.disembark{border-top-left-radius:0}
   .alab{
     font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
     color:var(--stay); font-weight:800; margin-bottom:2px;
   }
 
+  .unit.portrow{border:1px dashed #33305c; border-radius:11px; background:#15182a}
+  .unit.portrow::before{display:none}
   .portrow{
     display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px;
-    padding:9px 11px; border:1px dashed #33305c; border-radius:11px; background:#15182a;
+    padding:9px 11px; background:none; border:0;
   }
+  .unit.portrow .cue{padding:7px 11px 7px 0}
+  .unit.portrow .cline{padding-left:11px}
+  .portrow .pt{flex:0 0 calc(var(--gut) - 11px); text-align:right; font-size:15px; font-weight:680;
+    font-variant-numeric:tabular-nums}
+  .portrow .endrow .t{flex:0 0 calc(var(--gut) - 11px)}
   .portrow.done{opacity:.58}
   .portrow .pn{font-size:14.5px; font-weight:680; letter-spacing:-.01em}
   .portrow .ps{font-size:12px; color:var(--tx3); font-variant-numeric:tabular-nums}
   .portrow .plans{flex:1 1 100%; margin-top:7px}
+  .portrow .links{flex:1 1 100%; margin-top:7px}
   .portrow > button[data-edit]{
     margin-left:auto; background:none; border:1px solid var(--line); color:var(--tx3);
     border-radius:8px; padding:3px 9px; font-size:12px; font-family:inherit; font-weight:600;
   }
 
   .gap{
-    display:flex; align-items:center; margin:6px 0 6px 8px;
-    font-size:12px; color:var(--tx3); padding-left:12px; border-left:2px dashed var(--line);
-    min-height:26px;
+    display:flex; align-items:center; margin:4px 0;
+    font-size:12px; color:var(--tx3);
+    padding-left:calc(var(--pad) + var(--gut) + 12px); min-height:24px;
   }
   .gap.soft{color:var(--tx3)}
   .gap.soft::before{content:"· "}
@@ -182,6 +209,35 @@
   .gap.tight{color:var(--warn); border-color:#4a3a1a}
   .gap.clash{color:var(--bad); border-color:#4a2323; font-weight:600}
 
+  .mt.redo{color:#9fd4ff; font-weight:640; margin-top:2px}
+  .mt.bad{color:#ff9b9b; font-weight:700; margin-top:2px}
+  .focusdo{
+    display:block; width:100%; text-align:left; margin-top:11px;
+    background:#2a1e12; border:1px solid #5c4222; color:#f0b866;
+    border-radius:10px; padding:9px 11px; font-size:12.5px;
+    font-family:inherit; font-weight:640; line-height:1.4;
+  }
+  .tickbtn.held{border-style:dashed; color:#8a7a55}
+  .confirm{
+    margin-bottom:12px; background:#2a1e12; border:1px solid #5c4222; border-radius:11px;
+    padding:11px 12px;
+  }
+  .confirm .ct{font-size:13.5px; font-weight:700; color:#f0b866}
+  .confirm .cb{display:flex; gap:7px; margin-top:9px; flex-wrap:wrap}
+  .confirm button{
+    background:none; border:1px solid #5c4222; color:#f0b866;
+    border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:640;
+  }
+  .pretend{
+    display:flex; align-items:center; gap:10px; margin-bottom:12px;
+    background:#2a2210; border:1px solid #5a4718; border-radius:10px;
+    padding:9px 11px; font-size:12.5px; color:#e6c463; font-weight:620;
+  }
+  .pretend span{flex:1 1 auto; min-width:0}
+  .pretend button{
+    background:none; border:1px solid #5a4718; color:#e6c463;
+    border-radius:8px; padding:4px 10px; font-size:12px; font-family:inherit; font-weight:640;
+  }
   #empty{text-align:center; color:var(--tx3); padding:56px 20px; font-size:14.5px; line-height:1.6}
 
   #fab{
@@ -233,8 +289,8 @@
   .cap3{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--tx3);
     font-weight:700; margin:11px 0 4px}
   .fallback{
-    font-size:12px; color:var(--tx3); padding:4px 0 4px 12px; margin:2px 0 0 8px;
-    border-left:2px dotted var(--line); font-variant-numeric:tabular-nums;
+    font-size:12px; color:var(--tx3); padding:4px 0 4px calc(var(--pad) + var(--gut) + 12px); margin:2px 0 0;
+    font-variant-numeric:tabular-nums;
   }
   .rhead{font-size:13px; color:var(--tx2); margin:14px 0 10px}
   .rstep{
@@ -260,12 +316,7 @@
   .setrow{display:flex; align-items:center; gap:8px; margin-top:7px}
   .setrow .sname{flex:1 1 auto; min-width:0; font-size:13px; color:var(--tx2)}
   .setrow input{flex:0 0 84px; padding:8px 9px; font-size:15px; text-align:right}
-  .setrow.trio input{flex:0 0 62px}
   .setrow .sunit{flex:0 0 auto; font-size:11.5px; color:var(--tx3)}
-  .setrow.head{margin-top:10px}
-  .setrow.head span{flex:0 0 62px; text-align:center; font-size:10.5px; letter-spacing:.06em;
-    text-transform:uppercase; color:var(--tx3); font-weight:700}
-  .setrow.head .sname{flex:1 1 auto}
   .chips button{
     flex:1; background:var(--card); border:1px dashed var(--line); color:var(--tx3);
     border-radius:11px; padding:10px 4px; font:600 13px inherit; font-family:inherit;
@@ -397,8 +448,10 @@
   </div>
 
   <div id="rowAboard" hidden>
-    <label for="f_aboard">All aboard by <span class="opt">(optional — assumes 30 min before sailing)</span></label>
+    <label for="f_aboard">All aboard by <span class="opt">(assumed 30 min before sailing until you set it)</span></label>
     <input id="f_aboard" type="datetime-local">
+    <label for="f_agent">Port agent's number <span class="opt">(from today's programme — who to ring if you're late)</span></label>
+    <input id="f_agent" type="tel" inputmode="tel" placeholder="+34 …">
   </div>
 
   <label for="f_cost">Cost <span class="opt">(optional)</span></label>
@@ -408,7 +461,13 @@
   </div>
 
   <div id="rowFallback">
-    <label>If you miss it <span class="opt">— the next one, and the last</span></label>
+    <label>If you miss it <span class="opt">— is there another one?</span></label>
+    <div class="seg small" id="fbSeg">
+      <button type="button" data-fb="">Not looked up</button>
+      <button type="button" data-fb="yes">Others run</button>
+      <button type="button" data-fb="none">This is the only one</button>
+    </div>
+    <div id="fbFields">
     <div class="cap3">Next departure</div>
     <input id="f_next" type="datetime-local">
     <div class="cap3">Then every ~ minutes</div>
@@ -416,6 +475,10 @@
     <div class="cap3">Last departure</div>
     <input id="f_last" type="datetime-local">
     <div class="hint">Only what you fill in is used, and only what you fill in is shown. Nothing here is estimated.</div>
+    </div>
+    <div class="hint" id="fbNoneHint" hidden>
+      Miss it and there is no later one. That puts it on the critical path, whatever the ticket says.
+    </div>
   </div>
 
   <label id="lblMiss">Start time <span class="opt">— fixed means it goes without you</span></label>
@@ -480,6 +543,19 @@
   <div class="actions"><button class="btn" id="rippleClose">Close</button></div>
 </div>
 
+<!-- Ticking a thing off -->
+<div class="sheet" id="tick">
+  <div class="grab"></div>
+  <h2 id="tickTitle">Done</h2>
+  <label for="f_doneAt">Actually done at</label>
+  <input id="f_doneAt" type="datetime-local">
+  <div class="hint" id="tickSlip"></div>
+  <div class="actions">
+    <button class="btn" id="tickUndo">Not done after all</button>
+    <button class="btn primary" id="tickSave">Save</button>
+  </div>
+</div>
+
 <!-- Trips -->
 <div class="sheet" id="trips">
   <div class="grab"></div>
@@ -511,7 +587,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "3.7";
+const APP_VERSION = "5.0";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -586,6 +662,12 @@ function classify(t){
       touched = true;
     }
   }));
+  // v4.3: all-aboard is assumed everywhere, so saying so on the label is noise
+  (t.legs || []).forEach(l => (l.cues || []).forEach(c => {
+    if(!c.label) return;
+    const clean = c.label.replace(/\s*[（(]\s*(assumed|confirm)[^)）]*[)）]\s*$/i, "").trim();
+    if(clean && clean !== c.label){ c.label = clean; touched = true; }
+  }));
   return touched;
 }
 
@@ -657,7 +739,7 @@ const hhmm = d => d ? pad(d.getHours())+":"+pad(d.getMinutes()) : "";
 const dayKey = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const short = d => d.toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"});
 function dayLabel(d){
-  const t = new Date(); t.setHours(0,0,0,0);
+  const t = NOW(); t.setHours(0,0,0,0);
   const x = new Date(d); x.setHours(0,0,0,0);
   const diff = Math.round((x - t)/86400000);
   const base = x.toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long"});
@@ -666,6 +748,15 @@ function dayLabel(d){
   return base;
 }
 const mins = ms => Math.round(ms/60000);
+
+/* The clock, so a day can be rehearsed in August. Everything that asks the time
+   asks this, so setting it moves the whole app to that moment. */
+function NOW(){
+  const p = opt("misc", "pretend", "");
+  const d = p ? parse(p) : null;
+  return d || new Date();
+}
+const pretending = () => { const p = opt("misc", "pretend", ""); return !!(p && parse(p)); };
 function dur(m){
   if(m < 1) return "0m";
   const d = Math.floor(m/1440), h = Math.floor((m%1440)/60), mm = m%60;
@@ -710,16 +801,6 @@ const ICONS = {Flight:"✈",Train:"🚆",Cruise:"🛳",Coach:"🚌",Bus:"🚌",F
   "Port call":"⚓","Tender port":"⚓","Sea day":"🌊",Other:"•"};
 
 // how much slack is worth flagging, by what you're about to catch
-const TIGHT = {
-  Cruise:120, Ferry:45, Flight:60, Train:12, Coach:15, Bus:10, "Tube / Metro":8,
-  Taxi:10, Car:10, Walk:5, Transfer:10, "Port call":30, "Tender port":45
-};
-function opt(group, key, dflt){
-  const g = SET()[group];
-  const v = g ? g[key] : undefined;
-  return (v === undefined || v === null || v === "") ? dflt : v;
-}
-const tightFor = l => +opt("spare", l.mode, TIGHT[l.mode] != null ? TIGHT[l.mode] : 20);
 
 const DAY = 86400000;
 const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -760,7 +841,7 @@ let dodged = null;   // an entry you've backed out of, so we stop dragging you b
 
 function autoDrop(){
   if(SET().autoDrop === false) return false;
-  const now = new Date();
+  const now = NOW();
   let found = null;
   store.trips.forEach(t => {
     if(!t.parent || !t.active || found) return;
@@ -786,7 +867,15 @@ function render(){
   const all = sorted();
   $("#empty").hidden = all.length > 0;
   const list = $("#list"); list.innerHTML = "";
-  const now = new Date();
+  const now = NOW();
+  if(pretending()){
+    const w = document.createElement("div");
+    w.className = "pretend";
+    w.innerHTML = '<span>⏱ Rehearsing '+esc(short(now))+', '+hhmm(now)+'</span>'+
+                  '<button type="button" id="stopPretend">Back to now</button>';
+    w.querySelector("button").addEventListener("click", backToNow);
+    list.appendChild(w);
+  }
 
   const dated = all.filter(x => x.s);
   const parts = [];
@@ -826,17 +915,58 @@ function render(){
   if(pick){
     live = pick.s && pick.e && now >= pick.s && now <= pick.e;
     f.hidden = false;
-    f.innerHTML = live
-      ? '<div class="lab">' + (pick === aboard ? "Aboard" : "In progress") + '</div><div class="rt">'+esc(titleOf(pick))+'</div>'+
-        '<div class="mt">Until '+hhmm(pick.e)+(dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")+
-        ' · '+dur(mins(pick.e-now))+' to go</div>'
-      : (function(){
-          const w = startOf(pick);
-          return '<div class="lab">Next up</div><div class="rt">'+esc(titleOf(pick))+'</div><div class="mt">'+
-            (dayKey(w)===dayKey(now) ? "Today at " : dayLabel(w).split(" · ")[0]+" at ")+hhmm(w)+
-            ' · in '+dur(mins(w-now))+'</div>';
-        })();
+    const L = lateNow(all), lateBit = L ? lateLine(L) : null;
+    const m = nextMoment(all, now);
+    const when = live ? pick.e : startOf(pick);
+    // name the moment for what it is, so it can't be read as the all-aboard time
+    const verb = pick.l.kind === "port" ? "Arrives"
+               : pick.l.kind === "stop" ? "Starts"
+               : anchorWord(pick.l.mode, true);
+    const head = live
+      ? "Until " + hhmm(pick.e) + (dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")
+      : verb + " " + (dayKey(when)===dayKey(now) ? "today" : dayLabel(when).split(" · ")[0].toLowerCase()) +
+        " at " + hhmm(when);
+    // behind schedule, the planned times are fiction; say what to catch instead
+    const body = lateBit
+      ? (lateBit.alert ? '<div class="mt bad">'+esc(lateBit.alert)+'</div>' : '') +
+        (lateBit.redo  ? '<div class="mt redo">'+esc(lateBit.redo)+'</div>' : '')
+      : '<div class="mt">'+esc(head)+((m && m.t <= when)
+          ? ' · '+dur(mins(m.t - now))+' to '+esc(m.label)
+          : ' · '+(live ? dur(mins(when - now))+' to go' : 'in '+dur(mins(when - now))))+'</div>';
+    f.innerHTML = '<div class="lab">' +
+      (live ? (pick === aboard ? "Aboard" : "In progress") : "Up next") + '</div>'+
+      '<div class="rt">'+esc(titleOf(pick))+'</div>' + body;
   } else f.hidden = true;
+
+  if(pick && !f.hidden){
+    const t = pending(all);
+    if(t){
+      const a = document.createElement("button");
+      a.type = "button"; a.className = "focusdo";
+      a.textContent = "⚓ " + (t.port.l.place || "Next port") + " · " + askText(t);
+      a.addEventListener("click", () => openSheet(t.port.l.id));
+      f.appendChild(a);
+    }
+  }
+
+  /* Two things have to come off today's programme before you go ashore: the
+     all-aboard time and the port agent's number. Until both are in, the day is
+     not ready to be walked, so nothing from the port onwards can be ticked. */
+  const toDo = pending(all);
+  if(toDo){
+    const l = toDo.port.l, by = toDo.by;
+    const w = document.createElement("div");
+    w.className = "confirm";
+    w.innerHTML = '<div class="ct">⚓ '+esc(l.place || "Next port")+
+      (toDo.port.s ? " · " + short(toDo.port.s) : "")+' · '+esc(askText(toDo))+'</div>'+
+      '<div class="cb"></div>';
+    const bb = w.querySelector(".cb");
+    const mk = (txt, fn) => { const b = document.createElement("button");
+      b.type = "button"; b.textContent = txt; b.addEventListener("click", fn); bb.appendChild(b); };
+    if(toDo.needTime && by) mk("All aboard is " + hhmm(by), () => confirmAboard(l, by));
+    mk(toDo.needCall && !toDo.needTime ? "Add the number" : "Open the port", () => openSheet(l.id));
+    list.appendChild(w);
+  }
 
   renderTotals();
 
@@ -890,17 +1020,17 @@ function render(){
         const row = judge(it.x, it.t, prevEnd, prevTo, all, prevLeg);
         if(row) list.appendChild(row);
       }
-      if(it.type === "board"){ const c = beforeCue(it.x); if(c) list.appendChild(c); }
-      list.appendChild(anchor(it, now));
-      if(it.type === "disembark"){
-        const c = afterCue(it.x); if(c) list.appendChild(c);
+      const ac = anchor(it, now);
+      if(it.type === "board"){
+        list.appendChild(unitOf(ac, beforeCue(it.x), null, false));
+      } else {
+        list.appendChild(unitOf(ac, null, afterCue(it.x), false));
         prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || ""; prevLeg = it.x;
       }
     } else if(it.x.l.kind === "port"){
-      const pb = beforeCue(it.x); if(pb) box().appendChild(pb);
-      box().appendChild(portRow(it.x, now));
+      const pr = portRow(it.x, now), pb = beforeCue(it.x);
       prevEnd = endOf(it.x) || prevEnd; prevTo = it.x.l.place || prevTo; prevLeg = it.x;
-      const pa = afterCue(it.x); if(pa) box().appendChild(pa);
+      box().appendChild(unitOf(pr, pb, afterCue(it.x), false));
     } else {
       // connection warnings between consecutive journeys on the same day
       // only worth checking when the next thing has a start you have to hit:
@@ -915,13 +1045,10 @@ function render(){
         }
       }
       const before = beforeCue(it.x);
-      if(before){ if(it.port) before.classList.add("nested"); box().appendChild(before); }
       prevEnd = endOf(it.x) || prevEnd; prevTo = it.x.l.to || it.x.l.place || prevTo; prevLeg = it.x;
       const el = card(it.x, now);
-      if(it.port) el.classList.add("nested");
-      box().appendChild(el);
       const after = afterCue(it.x);
-      if(after){ if(it.port) after.classList.add("nested"); box().appendChild(after); }
+      box().appendChild(unitOf(el, before, after, it.port));
       const fb = fallbackRow(it.x.l);
       if(fb){ if(it.port) fb.classList.add("nested"); box().appendChild(fb); }
       // back-aboard check for anything ashore during a port call
@@ -982,6 +1109,19 @@ function cueList(x){
 const cuesFor = (x, side) => cueList(x).filter(z => z.side === side && (z.t || z.kind === "connection"))
   .sort((a,b) => (a.t && b.t) ? a.t - b.t : a.t ? -1 : b.t ? 1 : 0);
 
+/* On the day the only number worth a countdown is the next moment you have to
+   act on: when a connection has to start, or when a deadline shuts. Whichever
+   comes first. Nothing to count to means nothing shown. */
+function nextMoment(all, now){
+  const out = [];
+  all.forEach(x => cueList(x).forEach(z => {
+    if(!z.t || z.t <= now) return;
+    if(z.kind === "deadline") out.push({t:z.t, label:z.c.label || "the deadline"});
+    else if(z.side === "before") out.push({t:z.t, label:z.c.label || "set off"});
+  }));
+  return out.sort((a,b) => a.t - b.t)[0] || null;
+}
+
 // minutes of connection sitting in the space between two entries
 const connMins = (prev, next) =>
   (prev ? cuesFor(prev, "after").filter(z => z.kind === "connection").reduce((n,z) => n+z.mins, 0) : 0) +
@@ -995,56 +1135,42 @@ function cueBand(x, side){
   if(!list.length) return null;
   const d = document.createElement("div");
   d.className = "cue " + side + (list.some(z => z.kind === "deadline") ? " hashard" : "");
-  d.innerHTML = "⏱ " + list.map(z => {
+  d.innerHTML = list.map(z => {
     const label = z.c.label ? esc(z.c.label) : "";
-    if(z.kind === "connection") return '<span class="conn">'+(label || "connection")+' '+dur(z.mins)+'</span>';
-    return '<span class="'+(z.kind === "deadline" ? "hard" : "soft")+'">'+(label ? label+" " : "")+hhmm(z.t)+'</span>';
-  }).join(" · ");
+    const cls = z.kind === "connection" ? "conn" : z.kind === "deadline" ? "hard" : "soft";
+    const when = z.kind === "connection" ? dur(z.mins) : hhmm(z.t);
+    return '<div class="cline '+cls+'"><span class="t">'+when+'</span>'+
+           '<span class="w">'+(label || (z.kind === "connection" ? "connection" : "")) +'</span></div>';
+  }).join("");
   return d;
 }
+/* A card and its cues are one object: the deadline in front of a flight and the
+   walk out the far side belong to the flight, not to the space around it. */
+function unitOf(card, before, after, nested){
+  const u = document.createElement("div");
+  u.className = "unit";
+  ["done","live","next","stop","provisional","anchor","board","disembark","portrow"]
+    .forEach(c => { if(card.classList.contains(c)) u.classList.add(c); });
+  if(nested){ u.classList.add("nested"); card.classList.add("nested"); }
+  if(before) u.appendChild(before);
+  u.appendChild(card);
+  if(after) u.appendChild(after);
+  return u;
+}
+
 const beforeCue = x => cueBand(x, "before");
 const afterCue  = x => cueBand(x, "after");
 
 /* UNFORGIVING = missing it can't be undone. Trains and buses run again. */
 const UNFORGIVING = {Flight:1, Cruise:1, Ferry:1};
 function unforgiving(x){
+  if(onlyOne(x.l)) return true;
   if(cueList(x).some(z => z.kind === "deadline")) return true;
   if(x.l.fixed === true || x.l.fixed === false) return x.l.fixed;
   return !!opt("hard", x.l.mode, !!UNFORGIVING[x.l.mode]);
 }
 
 // how late a thing might plausibly run, by what you're arriving on
-const SLIP = {Walk:0, "Tube / Metro":5, Train:10, Bus:15, Coach:15, Taxi:15, Car:15,
-              Ferry:15, Transfer:15, Flight:25, Cruise:30};
-const slipFor = l => +opt("slip", l && l.mode, (l && SLIP[l.mode] != null) ? SLIP[l.mode] : 10);
-
-// idle time lying between this entry and something later — the cushion a delay would eat
-function cushionBetween(x, y, all){
-  let total = 0, prev = null, counting = false;
-  for(const z of all){
-    if(z.l.id === x.l.id){ counting = true; prev = z; continue; }
-    if(!counting || !z.s) continue;
-    if(prev && prev.e) total += Math.max(0, mins(z.s - prev.e) - connMins(prev, z));
-    if(z.l.id === y.l.id) break;
-    prev = z;
-  }
-  return total;
-}
-
-// the next thing you genuinely can't miss — and any you've flagged but not looked up
-function lookAhead(x, all){
-  const from = x.s;
-  let hard = null;
-  if(!from) return {hard:null};
-  for(const y of all){
-    const t = y.s;
-    if(y.l.id === x.l.id) continue;
-    if(!t || t <= from) continue;
-    if(!hard && unforgiving(y)) hard = {y:y, t:t, lead:mins(t - from)};
-  }
-  return {hard:hard};
-}
-
 /* slack = gap − connection. Connection is spent; slack absorbs lateness.
    A target is your planning line: crossing it is a loss of confidence, not a failure. */
 function judge(x, at, prevEnd, prevTo, all, prevLeg){
@@ -1056,30 +1182,20 @@ function judge(x, at, prevEnd, prevTo, all, prevLeg){
   if(slack < 0) return gapRow("clash", "⚠ " + dur(-slack) + " short");
   if(gap >= +opt("misc", "maxGap", 360)) return null;
 
+  // All time is spare until you give it a job. Following the plan, the only
+  // question is "what next, and will I make it" — margin is a setup-time concern.
+  const ok = txt => opt("misc", "showSpare", false) ? gapRow("ok", txt) : null;
+
   const target = targetFor(x);
   if(target){
     const eta = new Date(prevEnd.getTime() + conn*60000);
     if(eta > target.t) return gapRow("tight", "⚠ ETA " + dur(mins(eta - target.t)) + " later than target");
-    return gapRow("ok", dur(slack) + " spare");
+    return ok(dur(slack) + " spare");
   }
 
-  const need = tightFor(x.l) + slipFor(prevLeg && prevLeg.l);
-  if(slack < need){
-    if(unforgiving(x)) return gapRow("tight", "⚠ " + dur(slack) + " spare");
-    const ahead = lookAhead(x, all || []);
-    const own = fallbackOf(x.l);
-    const board = own && x.s ? nextDeparture(new Date(x.s.getTime() + 1), own) : null;
-    const lost = board ? mins(board - x.s) : null;
-    const cushion = ahead.hard ? cushionBetween(x, ahead.hard.y, all || []) : 0;
-    if(ahead.hard && lost != null && cushion < lost){
-      const what = ahead.hard.y.l.kind === "move"
-        ? (ahead.hard.y.l.mode || "journey").toLowerCase() + (ahead.hard.y.l.to ? " to " + ahead.hard.y.l.to : "")
-        : titleOf(ahead.hard.y);
-      return gapRow("tight", "⚠ " + dur(slack) + " spare — " + what + " " + hhmm(ahead.hard.t) + " follows");
-    }
-    return gapRow("soft", dur(slack) + " spare");
-  }
-  return gapRow("ok", dur(slack) + " spare");
+  // Nothing left to say: if the sums work, the plan says you make it.
+  // Being close to the line is not news — that is what "Late?" is for.
+  return ok(dur(slack) + " spare");
 }
 
 /* If you're N minutes late here, where does it land?
@@ -1095,10 +1211,19 @@ function ripple(x, minutes, all){
     const conn = connMins(prev, y);
     const required = new Date(free.getTime() + conn*60000);
     if(required <= y.s){
-      out.push({y:y, state:"clear", by:mins(y.s - required)});
+      out.push({y:y, state:"clear", by:mins(y.s - required),
+        made: cueList(y).filter(z => (z.kind === "deadline" || z.kind === "slack") && z.t && z.t >= required)
+          .map(z => ({label: z.c.label || "the deadline", by: mins(z.t - required)}))
+          .sort((p, q) => p.by - q.by)[0] || null});
       return {steps:out, verdict:"absorbed", at:y, spare:mins(y.s - required)};
     }
     const late = mins(required - y.s);
+
+    // running late, "you still make it" is worth saying — quote the tightest
+    // deadline you're still inside of, and by how much
+    const made = cueList(y).filter(z => (z.kind === "deadline" || z.kind === "slack") && z.t && z.t >= required)
+      .map(z => ({label: z.c.label || "the deadline", by: mins(z.t - required)}))
+      .sort((p, q) => p.by - q.by)[0] || null;
 
     const missedDeadline = cueList(y).filter(z => z.kind === "deadline" && z.t && z.t < required)[0];
     if(missedDeadline){
@@ -1106,25 +1231,27 @@ function ripple(x, minutes, all){
       return {steps:out, verdict:"broken", at:y};
     }
     if(y.l.kind === "move" && unforgiving(y)){
-      out.push({y:y, state:"broken", late:late});
+      out.push({y:y, state:"broken", late:late, why: onlyOne(y.l) ? "the only one" : ""});
       return {steps:out, verdict:"broken", at:y};
     }
     if(y.l.kind === "move"){
       const fb = fallbackOf(y.l);
       const nd = nextDeparture(required, fb);
       if(!nd || (fb.last && nd.t > fb.last)){
-        out.push({y:y, state:"broken", late:late,
+        // no recorded fallback isn't the same as no fallback: it just means the
+        // chain can't be followed any further from here.
+        out.push({y:y, state:"broken", late:late, unknown: !fb,
                   why: nd && fb.last ? "nothing after the last at " + hhmm(fb.last) : ""});
         return {steps:out, verdict:"broken", at:y};
       }
-      out.push({y:y, state:"missed", late:late, board:nd.t, est:nd.est,
+      out.push({y:y, state:"missed", late:late, board:nd.t, est:nd.est, made:made,
                 lastAt: fb.last ? fb.last : null});
       const run = y.e ? mins(y.e - y.s) : 0;
       free = new Date(nd.t.getTime() + run*60000);
       spent = mins(nd.t - y.s);
     } else {
       const run = y.e ? mins(y.e - y.s) : 0;
-      out.push({y:y, state:"shifted", late:late});
+      out.push({y:y, state:"shifted", late:late, made:made});
       free = new Date(required.getTime() + run*60000);
       spent = late;
     }
@@ -1132,6 +1259,56 @@ function ripple(x, minutes, all){
     if(out.length > 12) break;
   }
   return {steps:out, verdict:"ran out", spare:spent};
+}
+
+// only ever shown while you're running late: how much room is left before a
+// deadline you still meet. Silent when there is no deadline to measure against.
+function inside(s){
+  return s.made ? ' · ' + dur(s.made.by) + ' inside ' + esc(s.made.label) : '';
+}
+
+/* ---------- what your ticks imply ---------- */
+
+// the last thing you ticked, and how far behind it left you. null if you're fine.
+function lateNow(all){
+  let last = null;
+  all.forEach(x => {
+    if(!x.l.doneAt) return;
+    const planned = x.e || x.s; if(!planned) return;
+    if(!last || planned > (last.e || last.s)) last = x;
+  });
+  if(!last) return null;
+  const slip = mins(parse(last.l.doneAt) - (last.e || last.s));
+  return slip > 0 ? {from:last, slip:slip, steps: ripple(last, slip, all).steps} : null;
+}
+
+const modeWord = y => y.l.kind === "move" ? (y.l.mode || "service").toLowerCase() : titleOf(y);
+
+/* Running behind, the plan is no longer the answer. Say what to catch and when
+   you'd land — and only raise your voice if something can no longer be made. */
+function lateLine(L){
+  const first = L.steps[0];
+  if(!first || first.state === "clear") return null;
+
+  // what to do next
+  let redo = null;
+  if(first.state === "missed"){
+    const run = first.y.e && first.y.s ? mins(first.y.e - first.y.s) : 0;
+    const eta = new Date(first.board.getTime() + run*60000);
+    redo = "Next " + modeWord(first.y) + " " + hhmm(first.board) + (first.est ? " (est)" : "") +
+           (run ? " · ETA " + hhmm(eta) : "");
+  } else if(first.state === "shifted" && first.y.s){
+    redo = titleOf(first.y) + " now " + hhmm(new Date(first.y.s.getTime() + first.late*60000));
+  } else if(first.state === "broken" && first.unknown && first.y.s){
+    redo = "Missed the " + hhmm(first.y.s) + " " + modeWord(first.y);
+  }
+
+  // and the one thing that changes the answer: something you can no longer make
+  const gone = L.steps.find(z => z.state === "broken" && !z.unknown);
+  const alert = gone ? "⚠ " + titleOf(gone.y) + (gone.y.s ? " " + hhmm(gone.y.s) : "") +
+                       " — missed by " + dur(gone.late) + (gone.why ? " (" + gone.why + ")" : "")
+                     : null;
+  return (redo || alert) ? {redo:redo, alert:alert} : null;
 }
 
 function renderRipple(){
@@ -1142,13 +1319,13 @@ function renderRipple(){
   let h = '<div class="rhead">Running ' + dur(lateMins) + ' late from ' + esc(titleOf(x)) + '</div>';
   h += r.steps.map(s => {
     const name = esc(titleOf(s.y)) + ' ' + hhmm(s.y.s);
-    if(s.state === "clear")   return '<div class="rstep ok">✓ ' + name + ' — still fine, ' + dur(s.by) + ' to spare</div>';
-    if(s.state === "shifted") return '<div class="rstep">· ' + name + ' — starts ' + dur(s.late) + ' late</div>';
+    if(s.state === "clear")   return '<div class="rstep ok">✓ ' + name + ' — still fine, ' + dur(s.by) + ' to spare' + inside(s) + '</div>';
+    if(s.state === "shifted") return '<div class="rstep">· ' + name + ' — starts ' + dur(s.late) + ' late' + inside(s) + '</div>';
     if(s.state === "missed"){
       return '<div class="rstep warn">⚠ ' + name + ' — missed by ' + dur(s.late) +
         ", you'd be on the " + hhmm(s.board) + (s.est ? " (est)" : "") +
         (s.lastAt ? (Math.abs(s.board - s.lastAt) < 60000 ? ", the last one"
-                                                          : ' · last ' + hhmm(s.lastAt)) : '') + '</div>';
+                                                          : ' · last ' + hhmm(s.lastAt)) : '') + inside(s) + '</div>';
     }
     return '<div class="rstep bad">✗ ' + name + ' — missed by ' + dur(s.late) +
       (s.why ? ' (' + esc(s.why) + ')' : '') + '</div>';
@@ -1158,6 +1335,107 @@ function renderRipple(){
     r.verdict === "broken"   ? "Stops at " + esc(titleOf(r.at)) + "." :
     "Still " + dur(r.spare) + " behind at the end of what's planned.") + '</div>';
   box.innerHTML = h;
+}
+
+/* ---------- what today's programme still owes you ---------- */
+
+/* The port you're about to go ashore in, if it still needs squaring away.
+   Only once you're aboard: there's no daily programme to read before that, so
+   asking earlier would be asking for something that doesn't exist yet. */
+function pending(all){
+  const list = all || sorted();
+  const now = NOW();
+  if(!list.some(x => isSpan(x, list) && x.s && x.e && now >= x.s && now <= x.e)) return null;
+  const port = list.filter(x => x.l.kind === "port" && x.s && (x.e || x.s) >= now)
+                   .sort((a,b) => a.s - b.s)[0];
+  if(!port) return null;
+  const l = port.l;
+  const needTime = !l.aboard && !l.portOK;
+  const needCall = !l.agent;
+  return (needTime || needCall)
+    ? {port:port, by:aboardBy(port), needTime:needTime, needCall:needCall} : null;
+}
+
+const askText = t => t.needTime && t.needCall ? "confirm return details"
+                  : t.needTime ? "confirm the all-aboard time"
+                  : "add the port agent's number";
+
+function confirmAboard(l, by){
+  l.portOK = true; save(); render();
+  toast("All aboard " + hhmm(by) + " confirmed");
+}
+
+// nothing at or after an unconfirmed port gets ticked
+function blockedBy(l){
+  const t = pending(null);
+  if(!t || !t.port.s) return null;
+  if(l.id === t.port.l.id) return t;
+  const s = parse(l.start) || parse(l.end);
+  return (s && s >= t.port.s) ? t : null;
+}
+
+/* ---------- ticking off ---------- */
+let tickId = null;
+
+/* Leaving rehearsal, anything ticked that hasn't actually happened yet is a
+   rehearsal artefact, not a record. Ticks on things already past are kept. */
+function backToNow(){
+  const g = SET().misc || (SET().misc = {});
+  delete g.pretend;
+  const real = new Date();
+  let cleared = 0;
+  store.trips.forEach(t => t.legs.forEach(l => {
+    Object.keys(TICK).forEach(mode => {
+      const f = TICK[mode].field;
+      if(!l[f]) return;
+      const planned = TICK[mode].planned(l), at = parse(l[f]);
+      if((planned && planned > real) || (at && at > real)){ delete l[f]; cleared++; }
+    });
+  }));
+  save(); render();
+  toast(cleared ? "Back to now · " + cleared + (cleared === 1 ? " tick" : " ticks") + " undone" : "Back to now");
+}
+const roundMin = d => { const t = new Date(d); t.setSeconds(0,0); return t; };
+const localISO = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+
+                      "T"+pad(d.getHours())+":"+pad(d.getMinutes());
+
+// how late a thing actually ran, against what you planned. null when unknown.
+function slipOf(l, mode){
+  const t = TICK[mode || ""];
+  const at = parse(l[t.field]), planned = t.planned(l);
+  return (at && planned) ? mins(at - planned) : null;
+}
+const slipText = sl => sl == null ? "" :
+  sl > 0 ? dur(sl) + " late" : sl < 0 ? dur(-sl) + " early" : "on time";
+
+let tickMode = "";
+function tapTick(id, mode){
+  mode = mode || "";
+  const l = entryById(id); if(!l) return;
+  const f = TICK[mode].field;
+  if(!l.leg[f]){
+    const stop = blockedBy(l.leg);
+    if(stop){
+      toast("First: " + (stop.port.l.place || "the next port") + "'s all-aboard time and agent");
+      openSheet(stop.port.l.id);
+      return;
+    }
+  }
+  if(l.leg[f]){ openTick(id, mode); return; }
+  l.leg[f] = localISO(roundMin(NOW()));
+  save(); render();
+  toast("Done at " + hhmm(parse(l.leg[f])));
+}
+
+function openTick(id, mode){
+  tickId = id; tickMode = mode || "";
+  const l = entryById(id); if(!l) return;
+  $("#tickTitle").textContent = titleOfLeg(l.leg);
+  $("#f_doneAt").value = l.leg[TICK[tickMode].field] || localISO(roundMin(NOW()));
+  const sl = slipOf(l.leg, tickMode);
+  $("#tickSlip").textContent = sl == null ? "" : sl === 0 ? "Exactly as planned" :
+    dur(Math.abs(sl)) + (sl > 0 ? " later" : " earlier") + " than planned";
+  hideAll(); show("#tick");
 }
 
 let lateId = null, lateMins = 30;
@@ -1183,9 +1461,14 @@ function openRipple(id){
 }
 
 // the later version of the same journey — not part of the plan, but it's what you'd fall back on
+// "there is no other one" is a fact you can record, and it is not the same as
+// not having looked. Only the first makes something critical.
+const onlyOne = l => !!(l && l.fallback && l.fallback.known === "none");
+
 function fallbackOf(l){
   const f = l && l.fallback;
-  if(!f || (!f.next && !f.every && !f.last)) return null;
+  if(!f || f.known === "none") return null;
+  if(!f.next && !f.every && !f.last) return null;
   return {next: parse(f.next), every: f.every || null, last: parse(f.last)};
 }
 
@@ -1234,6 +1517,7 @@ function statusChips(l){
   return out;
 }
 
+const titleOfLeg = l => titleOf({l:l});
 function titleOf(x){
   const l = x.l;
   if(l.kind === "stop") return l.place || l.mode;
@@ -1252,8 +1536,10 @@ function anchorWord(mode, start){
 function anchor(it, now){
   const x = it.x, l = x.l, boarding = it.type === "board";
   const el = document.createElement("div");
+  const ticked = boarding ? !!l.doneAt : !!l.offDoneAt;
   el.className = "leg anchor" + (boarding ? " board" : " disembark") +
-                 ((boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "");
+                 (ticked || (boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "") +
+                 (ticked ? " ticked" : "");
   const when = boarding ? x.s : x.e;
   const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
 
@@ -1268,7 +1554,8 @@ function anchor(it, now){
     if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
     const on = startOf(x), off = endOf(x);
     if(on && off) bits.push('<span>'+dur(mins(off - on))+' aboard</span>');
-    if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
+    if(onlyOne(l)) bits.push('<span class="chip crit">only one</span>');
+  if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
   if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
   statusChips(l).forEach(c => bits.push(c));
   if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
@@ -1284,13 +1571,37 @@ function anchor(it, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button>'+
-       '<button data-late="'+l.id+'">Late?</button></div></div>';
+  h += '<div class="rowbtns">'+rowBtns(l, boarding ? "board" : "off")+'</div></div>';
   el.innerHTML = h;
-  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
-  el.querySelector("[data-late]").addEventListener("click", () => openRipple(l.id));
+  wireBtns(el, l);
   wirePlans(el, l);
   return el;
+}
+
+/* Ticking a thing off is how the day is walked: the tick records when it really
+   happened, which is where lateness comes from. Nothing is inferred from it. */
+/* An entry has one moment you tick off, except a voyage, which has two: the
+   day you get on and the day you get off. mode says which end you're ticking. */
+const TICK = {
+  "":      {field:"doneAt",    planned: l => parse(l.end) || parse(l.start)},
+  "board": {field:"doneAt",    planned: l => parse(l.start)},
+  "off":   {field:"offDoneAt", planned: l => parse(l.end)}
+};
+function rowBtns(l, mode){
+  mode = mode || "";
+  const at = parse(l[TICK[mode].field]);
+  const held = !at && blockedBy(l);
+  return '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
+         (at ? " on" : held ? " held" : "")+'">'+
+         (at ? "✓ " + hhmm(at) : held ? "🔒 Done" : "Done") + '</button>'+
+         '<button data-edit="'+l.id+'">Edit</button>'+
+         '<button data-late="'+l.id+'">Late?</button>';
+}
+function wireBtns(el, l){
+  const e = el.querySelector("[data-edit]"); if(e) e.addEventListener("click", () => openSheet(l.id));
+  const r = el.querySelector("[data-late]"); if(r) r.addEventListener("click", () => openRipple(l.id));
+  const t = el.querySelector("[data-tick]");
+  if(t) t.addEventListener("click", () => tapTick(l.id, t.dataset.mode || ""));
 }
 
 // "▸ Version A · 6 steps" — the way into a nested day
@@ -1336,15 +1647,19 @@ function portRow(x, now){
   el.className = "portrow" + (x.e && now > x.e ? " done" : "");
   const by = aboardBy(x);
   let sub = [];
-  if(x.s) sub.push(hhmm(x.s) + (x.e ? "–" + (dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" " : "") + hhmm(x.e) : ""));
-  if(by && x.e) sub.push("all aboard " + hhmm(by));
   const c = parseFloat(l.cost);
   if(!isNaN(c) && c > 0) sub.push(money(c, l.ccy||"GBP"));
   if(l.booked) sub.push("booked");
-  el.innerHTML = '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
+  el.innerHTML = '<span class="pt">'+(x.s ? hhmm(x.s) : "—")+'</span>'+
+                 '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
                  (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
-                 '<button data-edit="'+l.id+'">Edit</button>' + planChips(l);
-  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+                 '<button data-edit="'+l.id+'">Edit</button>' + planChips(l) +
+                 (l.agent ? '<div class="links"><a href="tel:'+esc(l.agent.replace(/\s+/g,""))+
+                            '">☎ '+esc(l.agent)+'</a></div>' : '') +
+                 (x.e ? '<div class="endrow"><span class="t">'+hhmm(x.e)+'</span><span class="d">'+
+                        (dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" · " : "") + "sails" +
+                        (by ? ", all aboard " + hhmm(by) : "") + '</span></div>' : '');
+  wireBtns(el, l);
   wirePlans(el, l);
   return el;
 }
@@ -1367,15 +1682,14 @@ function card(x, now){
   const l = x.l, stop = l.kind === "stop";
   const el = document.createElement("div");
   let cls = "leg" + (stop ? " stop" : "") + (l.booked ? "" : " provisional");
-  if(x.e && now > x.e) cls += " done";
+  if(l.doneAt) cls += " done ticked";
+  else if(x.e && now > x.e) cls += " done";
   else if(x.s && x.e && now >= x.s && now <= x.e) cls += " live";
   else if(x.s && x.s > now) cls += " next";
   el.className = cls;
 
   const sameDay = x.s && x.e && dayKey(x.s) === dayKey(x.e);
-  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div>'+
-          ((x.e && (!stop || sameDay)) ? '<div class="b">'+hhmm(x.e)+'</div>' : '')+
-          '</div><div class="body">';
+  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div></div><div class="body">';
 
   h += '<div class="route">' + (stop
         ? esc(l.place || l.mode || "Stop")
@@ -1385,15 +1699,7 @@ function card(x, now){
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
   const cost = parseFloat(l.cost);
   if(!isNaN(cost) && cost > 0) bits.push('<span class="chip money">'+money(cost, l.ccy||"GBP")+'</span>');
-  if(stop && x.s && x.e && !sameDay){
-    const nights = Math.round((new Date(x.e.getFullYear(),x.e.getMonth(),x.e.getDate()) -
-                               new Date(x.s.getFullYear(),x.s.getMonth(),x.s.getDate()))/86400000);
-    bits.push('<span>Out '+short(x.e)+', '+hhmm(x.e)+'</span>');
-    bits.push('<span>'+nights+(nights===1?" night":" nights")+'</span>');
-  } else if(x.s && x.e){
-    const d = mins(x.e - x.s);
-    if(d >= 0) bits.push('<span>'+dur(d)+'</span>');
-  }
+  if(onlyOne(l)) bits.push('<span class="chip crit">only one</span>');
   if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
   if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
   statusChips(l).forEach(c => bits.push(c));
@@ -1407,11 +1713,27 @@ function card(x, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button>'+
-       '<button data-late="'+l.id+'">Late?</button></div></div>';
+  h += '<div class="rowbtns">'+rowBtns(l)+'</div></div>';
+  if(x.e){
+    let tail = "";
+    if(stop && !sameDay){
+      const nights = Math.round((new Date(x.e.getFullYear(),x.e.getMonth(),x.e.getDate()) -
+                                 new Date(x.s.getFullYear(),x.s.getMonth(),x.s.getDate()))/86400000);
+      tail = short(x.e) + " · " + nights + (nights===1 ? " night" : " nights");
+    } else if(x.s){
+      const d = mins(x.e - x.s);
+      if(d >= 0) tail = dur(d);
+      if(!sameDay) tail = short(x.e) + (tail ? " · " + tail : "");
+    }
+    h += '<div class="endrow"><span class="t">'+hhmm(x.e)+'</span>'+
+         (tail ? '<span class="d">'+esc(tail)+'</span>' : '')+'</div>';
+  }
+  const at = parse(l.doneAt);
+  if(at){
+    h += '<div class="endrow tickrow"><span class="t">'+hhmm(at)+'</span><span class="d">✓ done</span></div>';
+  }
   el.innerHTML = h;
-  el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
-  el.querySelector("[data-late]").addEventListener("click", () => openRipple(l.id));
+  wireBtns(el, l);
   wirePlans(el, l);
   return el;
 }
@@ -1517,6 +1839,16 @@ function readCues(){
     .sort((a,b) => (a.at||"").localeCompare(b.at||""));
 }
 
+let fbMode = "";
+function setFb(v){
+  fbMode = (v === "yes" || v === "none") ? v : "";
+  document.querySelectorAll("#fbSeg button").forEach(b => b.classList.toggle("on", b.dataset.fb === fbMode));
+  $("#fbFields").hidden   = fbMode !== "yes";
+  $("#fbNoneHint").hidden = fbMode !== "none";
+}
+document.querySelectorAll("#fbSeg button").forEach(b =>
+  b.addEventListener("click", () => setFb(b.dataset.fb)));
+
 let missMode = "soft";
 function setMiss(v){
   missMode = v;
@@ -1553,9 +1885,12 @@ function openSheet(id){
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
   $("#f_aboard").value = l ? (l.aboard || "") : "";
+  $("#f_agent").value  = l ? (l.agent  || "") : "";
   $("#f_next").value  = l && l.fallback ? (l.fallback.next || "") : "";
   $("#f_every").value = l && l.fallback && l.fallback.every ? l.fallback.every : "";
   $("#f_last").value  = l && l.fallback ? (l.fallback.last || "") : "";
+  setFb(l && l.fallback ? (l.fallback.known ||
+        ((l.fallback.next || l.fallback.every || l.fallback.last) ? "yes" : "")) : "");
   setMiss(l ? (l.fixed ? "hard" : "soft")
             : (opt("hard", $("#f_mode").value, !!SEED_FIXED[$("#f_mode").value]) ? "hard" : "soft"));
   setStatus(l);
@@ -1615,7 +1950,7 @@ function defaultStart(){
   const last = s.length ? s[s.length-1] : null;
   if(last && last.l.end) return last.l.end;
   if(last && last.l.start) return last.l.start;
-  const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1);
+  const d = NOW(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1);
   return stamp(d);
 }
 
@@ -1632,10 +1967,12 @@ function collect(){
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
     ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
     aboard: kind === "port" ? $("#f_aboard").value : "",
+    agent:  kind === "port" ? $("#f_agent").value.trim() : "",
     cues: readCues(),
-    fallback: kind === "move" ? {next: $("#f_next").value || "",
-                                 every: parseInt($("#f_every").value, 10) || null,
-                                 last: $("#f_last").value || ""} : null,
+    fallback: kind === "move" ? {known: fbMode,
+                                 next: fbMode === "yes" ? ($("#f_next").value || "") : "",
+                                 every: fbMode === "yes" ? (parseInt($("#f_every").value, 10) || null) : null,
+                                 last: fbMode === "yes" ? ($("#f_last").value || "") : ""} : null,
     fixed: missMode === "hard",
     booked: readStatus("booked"), paid: readStatus("paid"), checkedIn: readStatus("checkedIn")
   };
@@ -1731,6 +2068,18 @@ $("#menuBtn").addEventListener("click", () => show("#menu"));
 $("#menuClose").addEventListener("click", hideAll);
 $("#tripsClose").addEventListener("click", hideAll);
 $("#rippleClose").addEventListener("click", hideAll);
+
+$("#tickSave").addEventListener("click", () => {
+  const l = entryById(tickId); if(!l) return hideAll();
+  const v = $("#f_doneAt").value;
+  if(!v){ toast("Pick a time, or say it isn't done"); return; }
+  l.leg[TICK[tickMode].field] = v; save(); hideAll(); render();
+  toast("Saved");
+});
+$("#tickUndo").addEventListener("click", () => {
+  const l = entryById(tickId); if(l) delete l.leg[TICK[tickMode].field];
+  save(); hideAll(); render(); toast("Unticked");
+});
 
 $("#plansBtn").addEventListener("click", () => {
   if(!editing) return;
@@ -1884,6 +2233,12 @@ document.querySelectorAll(".quick button[data-add]").forEach(b => {
 
 
 /* Durations are stored in minutes but typed however suits: 90, 2h, 1.5h, 7d. */
+function opt(group, key, dflt){
+  const g = SET()[group];
+  const v = g ? g[key] : undefined;
+  return (v === undefined || v === null || v === "") ? dflt : v;
+}
+
 function parseDur(s){
   const m = /^(\d+(?:\.\d+)?)\s*(d|day|days|h|hr|hrs|hour|hours|m|min|mins)?$/i.exec(String(s).trim());
   if(!m) return null;
@@ -1905,15 +2260,18 @@ function setField(group, key, dflt, opts){
   const stored = SET()[group] && SET()[group][key] != null ? SET()[group][key] : null;
   const cur = stored == null ? "" : (opts.dur ? showDur(stored) : stored);
   wrap.innerHTML = '<span class="sname">'+esc(opts.name || key)+'</span>'+
-    '<input type="'+(opts.text || opts.dur ? "text" : "number")+'" '+
-      (opts.text || opts.dur ? '' : 'min="0" step="'+(opts.step||1)+'" inputmode="numeric" ')+
+    '<input type="'+(opts.dt ? "datetime-local" : opts.text || opts.dur ? "text" : "number")+'" '+
+      (opts.dt || opts.text || opts.dur ? '' : 'min="0" step="'+(opts.step||1)+'" inputmode="numeric" ')+
     'value="'+esc(String(cur))+'" placeholder="'+esc(opts.dur ? showDur(dflt) : String(dflt))+'">'+
     (opts.unit ? '<span class="sunit">'+esc(opts.unit)+'</span>' : '');
   const inp = wrap.querySelector("input");
   inp.addEventListener("change", () => {
     const g = SET()[group] || (SET()[group] = {});
     const raw = inp.value.trim();
-    if(raw === "") delete g[key];
+    if(raw === ""){
+      delete g[key];
+      if(group === "misc" && key === "pretend"){ backToNow(); renderSettings(); return; }
+    }
     else if(opts.dur){
       const v = parseDur(raw);
       if(v == null || v < 0){
@@ -1923,7 +2281,7 @@ function setField(group, key, dflt, opts){
       }
       g[key] = v; inp.value = showDur(v);
     }
-    else g[key] = opts.text ? raw : (opts.step ? parseFloat(raw) : parseInt(raw, 10));
+    else g[key] = (opts.dt || opts.text) ? raw : (opts.step ? parseFloat(raw) : parseInt(raw, 10));
     save(); render();
   });
   return wrap;
@@ -1958,14 +2316,17 @@ function renderSettings(){
   add(section("Behaviour"));
   const beh = document.createElement("div"); beh.className = "chips wrap";
   beh.appendChild(setToggle("misc", "autoDrop", true, "Open plans on the day"));
+  beh.appendChild(setToggle("misc", "showSpare", false, "Show spare time (for setting up)"));
   add(beh);
   add(setField("misc", "maxGap", 360, {name:"Ignore gaps longer than", dur:true}));
   add(setField("misc", "aboardBefore", 30, {name:"All aboard before sailing", dur:true}));
   add(setField("misc", "rippleSteps", "15,30,45,60,120", {name:"Late-by steps", text:true}));
   add(setField("misc", "checkout", "10:00", {name:"Hotel check-out, next morning", text:true}));
 
-  add(section("Journeys", "spare and slip in minutes, typical as 90, 2h or 7d. 0 turns a check off"));
-  add(headRow());
+  add(section("Rehearsal", "move the whole app to a moment, to walk a day through before you live it"));
+  add(setField("misc", "pretend", "", {name:"Pretend the time is", dt:true}));
+
+  add(section("Journeys", "typical length used when you open an end-time picker"));
   MOVE_TYPES.forEach(m => add(typeRow(m)));
 
   add(section("Can't be missed by default", "tap to change what a new entry starts as"));
@@ -2008,20 +2369,12 @@ function renderSettings(){
   add(v);
 }
 
-function headRow(){
-  const d = document.createElement("div");
-  d.className = "setrow head";
-  d.innerHTML = '<span class="sname"></span><span>spare</span><span>slip</span><span>typical</span>';
-  return d;
-}
 
 function typeRow(m){
   const d = document.createElement("div");
-  d.className = "setrow trio";
+  d.className = "setrow";
   d.innerHTML = '<span class="sname">'+esc(m)+'</span>';
-  [["spare", TIGHT[m] != null ? TIGHT[m] : 20, false],
-   ["slip",  SLIP[m]  != null ? SLIP[m]  : 10, false],
-   ["typical", TYPICAL[m] || 60, true]].forEach(([group, dflt, isDur]) => {
+  [["typical", TYPICAL[m] || 60, true]].forEach(([group, dflt, isDur]) => {
     const stored = SET()[group] && SET()[group][m] != null ? SET()[group][m] : null;
     const i = document.createElement("input");
     if(isDur){ i.type = "text"; }
