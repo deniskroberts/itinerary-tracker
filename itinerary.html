@@ -63,13 +63,6 @@
   #focus .rt{font-size:17px; font-weight:650; margin:5px 0 3px; letter-spacing:-.01em}
   #focus .mt{font-size:13px; color:var(--tx2)}
 
-  #totals{
-    display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:16px;
-    padding:11px 14px; border:1px solid var(--line); border-radius:var(--r); background:var(--bg2);
-  }
-  #totals .k{font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:var(--tx3); font-weight:700; margin-right:auto}
-  #totals .v{font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
-  #totals .approx{font-size:12.5px; color:var(--tx3); font-variant-numeric:tabular-nums; width:100%}
 
   .dayhead{
     display:flex; align-items:center; gap:10px;
@@ -177,23 +170,8 @@
     color:var(--stay); font-weight:800; margin-bottom:2px;
   }
 
-  .unit.portrow{border:1px dashed #33305c; border-radius:11px; background:#15182a}
-  .unit.portrow::before{display:none}
-  .portrow{
-    display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 10px;
-    padding:9px 11px; background:none; border:0;
-  }
-  .unit.portrow .cue{padding:7px 11px 7px 0}
-  .unit.portrow .cline{padding-left:11px}
-  .portrow .pt{flex:0 0 calc(var(--gut) - 11px); text-align:right; font-size:15px; font-weight:680;
-    font-variant-numeric:tabular-nums}
-  .portrow .endrow .t{flex:0 0 calc(var(--gut) - 11px)}
-  .portrow.done{opacity:.58}
-  .portrow .pn{font-size:14.5px; font-weight:680; letter-spacing:-.01em}
-  .portrow .ps{font-size:12px; color:var(--tx3); font-variant-numeric:tabular-nums}
-  .portrow .plans{flex:1 1 100%; margin-top:7px}
-  .portrow .links{flex:1 1 100%; margin-top:7px}
-  .portrow .rowbtns{flex:1 1 100%}
+  .unit.port{border-style:dashed; border-color:#33305c; background:#15182a}
+  .unit.port::before{background:var(--stay)}
 
   .gap{
     display:flex; align-items:center; margin:4px 0;
@@ -209,23 +187,27 @@
 
   .mt.redo{color:#9fd4ff; font-weight:640; margin-top:2px}
   .mt.bad{color:#ff9b9b; font-weight:700; margin-top:2px}
-  .focusdo{
-    display:block; width:100%; text-align:left; margin-top:11px;
-    background:#2a1e12; border:1px solid #5c4222; color:#f0b866;
-    border-radius:10px; padding:9px 11px; font-size:12.5px;
-    font-family:inherit; font-weight:640; line-height:1.4;
-  }
   .tickbtn.held{border-style:dashed; color:#8a7a55}
   .confirm{
-    margin-bottom:12px; background:#2a1e12; border:1px solid #5c4222; border-radius:11px;
-    padding:11px 12px;
+    margin-top:11px; background:#2a1e12; border:1px solid #5c4222; border-radius:10px;
+    padding:10px 11px;
   }
-  .confirm .ct{font-size:13.5px; font-weight:700; color:#f0b866}
-  .confirm .cb{display:flex; gap:7px; margin-top:9px; flex-wrap:wrap}
-  .confirm button{
+  .confirm .ct{
+    display:block; width:100%; text-align:left; background:none; border:0;
+    color:#f0b866; font-family:inherit; font-size:13px; font-weight:700; padding:0;
+  }
+  .confirm .cf{margin-top:10px}
+  .confirm label{display:block; font-size:11.5px; color:#d9ad74; font-weight:640; margin:8px 0 4px}
+  .confirm input{
+    width:100%; padding:9px 10px; font-size:16px; font-family:inherit;
+    background:#1a1207; border:1px solid #5c4222; color:#f7dcae; border-radius:9px;
+  }
+  .confirm .cb{display:flex; gap:7px; margin-top:11px}
+  .confirm .save{
     background:none; border:1px solid #5c4222; color:#f0b866;
-    border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:640;
+    border-radius:9px; padding:6px 14px; font-size:12.5px; font-family:inherit; font-weight:640;
   }
+
   .pretend{
     display:flex; align-items:center; gap:10px; margin-bottom:12px;
     background:#2a2210; border:1px solid #5a4718; border-radius:10px;
@@ -395,7 +377,6 @@
 
 <main>
   <div id="focus" hidden></div>
-  <div id="totals" hidden></div>
   <div id="list"></div>
   <div id="empty">No entries yet.<br>Tap <b>+</b> to add the first one.</div>
 </main>
@@ -593,7 +574,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "6.0";
+const APP_VERSION = "7.2";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
@@ -900,6 +881,13 @@ function render(){
   }
   const tot = totalsText(t);
   if(tot.length) parts.push(tot.join(" · "));
+  // and what they come to together, at your saved rates
+  const byC = totalsFor(t), keys = Object.keys(byC);
+  if(keys.length > 1){
+    let gbp = 0, ok = true;
+    keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
+    if(ok) parts.push("≈ " + money(gbp, "GBP") + " combined");
+  }
   const owed = owedFor(t);
   const owedTxt = Object.keys(owed).map(c => money(owed[c], c)).join(" · ");
   if(owedTxt) parts.push(owedTxt + " outstanding");
@@ -951,37 +939,36 @@ function render(){
       '<div class="rt">'+esc(titleOf(pick))+'</div>' + body;
   } else f.hidden = true;
 
-  if(pick && !f.hidden){
-    const t = pending(all);
-    if(t){
-      const a = document.createElement("button");
-      a.type = "button"; a.className = "focusdo";
-      a.textContent = "⚓ " + (t.port.l.place || "Next port") + " · " + askText(t);
-      a.addEventListener("click", () => openSheet(t.port.l.id));
-      f.appendChild(a);
-    }
-  }
-
   /* Two things have to come off today's programme before you go ashore: the
-     all-aboard time and the port agent's number. Until both are in, the day is
-     not ready to be walked, so nothing from the port onwards can be ticked. */
+     all-aboard time and the port agent's number. It lives inside Up next,
+     which is where you're already looking — and names the port only when
+     that isn't the thing Up next has just named. */
   const toDo = pending(all);
-  if(toDo){
-    const l = toDo.port.l, by = toDo.by;
+  if(toDo && pick && !f.hidden){
+    const l = toDo.port.l;
+    const same = pick.l.id === l.id;
+    const head = "⚓ " + (same ? cap(askText(toDo))
+                              : (l.place || "Next port") + " · " + askText(toDo));
     const w = document.createElement("div");
-    w.className = "confirm";
-    w.innerHTML = '<div class="ct">⚓ '+esc(l.place || "Next port")+
-      (toDo.port.s ? " · " + short(toDo.port.s) : "")+' · '+esc(askText(toDo))+'</div>'+
-      '<div class="cb"></div>';
-    const bb = w.querySelector(".cb");
-    const mk = (txt, fn) => { const b = document.createElement("button");
-      b.type = "button"; b.textContent = txt; b.addEventListener("click", fn); bb.appendChild(b); };
-    if(toDo.needTime && by) mk("All aboard is " + hhmm(by), () => confirmAboard(l, by));
-    mk(toDo.needCall && !toDo.needTime ? "Add the number" : "Open the port", () => openSheet(l.id));
-    list.appendChild(w);
+    w.className = "confirm" + (confirmOpen ? " open" : "");
+    let form = "";
+    if(toDo.needTime) form += '<label for="c_aboard">All aboard</label>'+
+                              '<input id="c_aboard" type="time">';
+    if(toDo.needCall) form += '<label for="c_agent">Port agent\u2019s number</label>'+
+                              '<input id="c_agent" type="tel" inputmode="tel" placeholder="+33 \u2026">';
+    w.innerHTML = '<button type="button" class="ct">'+esc(head)+'</button>'+
+                  '<div class="cf"'+(confirmOpen ? "" : " hidden")+'>'+form+
+                  '<div class="cb"><button type="button" class="save">Save</button></div></div>';
+    $(".ct", w).addEventListener("click", () => {
+      confirmOpen = !confirmOpen;
+      w.classList.toggle("open", confirmOpen);
+      $(".cf", w).hidden = !confirmOpen;
+      if(confirmOpen){ const i = w.querySelector("input"); if(i) i.focus(); }
+    });
+    $(".save", w).addEventListener("click", () => saveReturn(toDo, w));
+    f.appendChild(w);
   }
 
-  renderTotals();
 
   /* ---- build a flat, chronological list of things to draw ---- */
   const items = [];
@@ -1162,7 +1149,7 @@ function cueBand(x, side){
 function unitOf(card, before, after, nested){
   const u = document.createElement("div");
   u.className = "unit";
-  ["done","live","next","stop","provisional","anchor","board","disembark","portrow"]
+  ["done","live","next","stop","provisional","anchor","board","disembark","port"]
     .forEach(c => { if(card.classList.contains(c)) u.classList.add(c); });
   if(nested){ u.classList.add("nested"); card.classList.add("nested"); }
   if(before) u.appendChild(before);
@@ -1344,13 +1331,31 @@ function pending(all){
     ? {port:port, by:aboardBy(port), needTime:needTime, needCall:needCall} : null;
 }
 
+const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 const askText = t => t.needTime && t.needCall ? "confirm return details"
                   : t.needTime ? "confirm the all-aboard time"
                   : "add the port agent's number";
 
-function confirmAboard(l, by){
-  l.portOK = true; save(); render();
-  toast("All aboard " + hhmm(by) + " confirmed");
+/* Confirming is typing what the programme says. The assumed time is never
+   shown here — it would only invite you to rubber-stamp my arithmetic. */
+let confirmOpen = false;
+function saveReturn(toDo, w){
+  const l = toDo.port.l;
+  const t = $("#c_aboard", w), n = $("#c_agent", w);
+  let did = 0;
+  if(t && t.value){
+    const sails = toDo.port.e || toDo.port.s;
+    if(!sails){ toast("This port has no sailing time yet"); return; }
+    const when = parse(dayKey(sails) + "T" + t.value);
+    if(!when){ toast("That time didn\u2019t read"); return; }
+    if(when > sails){ toast("All aboard is after the ship sails"); return; }
+    l.aboard = localISO(when); l.portOK = true; did++;
+  }
+  if(n && n.value.trim()){ l.agent = n.value.trim(); did++; }
+  if(!did){ toast("Nothing filled in yet"); return; }
+  confirmOpen = false;
+  save(); render();
+  toast(did === 2 ? "Return details confirmed" : "Saved");
 }
 
 // nothing at or after an unconfirmed port gets ticked
@@ -1510,50 +1515,6 @@ function anchorWord(mode, start){
 }
 
 /* the cards at each end of a span */
-function anchor(it, now){
-  const x = it.x, l = x.l, boarding = it.type === "board";
-  const el = document.createElement("div");
-  const ticked = boarding ? !!l.doneAt : !!l.offDoneAt;
-  el.className = "leg anchor" + (boarding ? " board" : " disembark") +
-                 (ticked || (boarding ? (x.s && now > x.s) : (x.e && now > x.e)) ? " done" : "") +
-                 (ticked ? " ticked" : "");
-  const when = boarding ? x.s : x.e;
-  const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
-
-  let h = '<div class="times"><div class="a">'+(when?hhmm(when):"—")+'</div></div><div class="body">';
-  h += '<div class="alab">'+esc(anchorWord(l.mode, boarding))+'</div>';
-  h += '<div class="route">'+esc(where)+'</div>';
-
-  const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
-  if(boarding){
-    const c = parseFloat(l.cost);
-    if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
-    const on = startOf(x), off = endOf(x);
-    if(on && off) bits.push('<span>'+dur(mins(off - on))+' aboard</span>');
-    if(onlyOne(l)) bits.push('<span class="chip crit">only one</span>');
-    if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
-    if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
-    statusChips(l).forEach(c => bits.push(c));
-    if(l.service) bits.push('<span class="chip svc">'+esc(l.service)+'</span>');
-    if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
-  } else {
-    const roll = spanTotals(it.span);
-    Object.keys(roll).forEach(c => bits.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
-  }
-  h += '<div class="meta">'+bits.join("")+'</div>';
-  if(boarding && l.notes) h += '<div class="notes">'+esc(l.notes)+'</div>';
-
-  const links = (l.links||[]).filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()));
-  if(boarding && links.length) h += '<div class="links">'+links.map(a =>
-    '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
-
-  h += planChips(l);
-  h += '<div class="rowbtns">'+rowBtns(l, boarding ? "board" : "off", x)+'</div></div>';
-  el.innerHTML = h;
-  wireBtns(el, l);
-  wirePlans(el, l);
-  return el;
-}
 
 /* Ticking a thing off is how the day is walked: the tick records when it really
    happened, which is where lateness comes from. Nothing is inferred from it. */
@@ -1628,104 +1589,140 @@ function spanTotals(span){
 }
 
 /* a port call — a slim header, not a full card */
-function portRow(x, now){
-  const l = x.l;
+
+/* ===== one item, six slots ============================================
+   WHEN · WHAT · WHICH · STATE · MONEY · DO, in that order, on every kind of
+   thing. A journey, a stay, a port call and each end of a voyage are all
+   configurations of this, not separate components. */
+
+const endRow = (t, d, cls) =>
+  '<div class="endrow'+(cls ? " "+cls : "")+'"><span class="t">'+t+'</span>'+
+  (d ? '<span class="d">'+d+'</span>' : '')+'</div>';
+
+function item(spec){
   const el = document.createElement("div");
-  el.className = "portrow" + (x.e && now > x.e ? " done" : "");
-  const by = aboardBy(x);
-  let sub = [];
-  const c = parseFloat(l.cost);
-  if(!isNaN(c) && c > 0) sub.push(money(c, l.ccy||"GBP"));
-  if(l.booked) sub.push("booked");
-  el.innerHTML = '<span class="pt">'+(x.s ? hhmm(x.s) : "—")+'</span>'+
-                 '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
-                 (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
-                 planChips(l) +
-                 (l.agent ? '<div class="links"><a href="tel:'+esc(l.agent.replace(/\s+/g,""))+
-                            '">☎ '+esc(l.agent)+'</a></div>' : '') +
-                 '<div class="rowbtns">'+rowBtns(l, "", x)+'</div>' +
-                 (x.e ? '<div class="endrow"><span class="t">'+hhmm(x.e)+'</span><span class="d">'+
-                        (dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" · " : "") + "sails" +
-                        (by ? ", all aboard " + hhmm(by) : "") + '</span></div>' : '');
-  wireBtns(el, l);
-  wirePlans(el, l);
+  el.className = ["leg"].concat(spec.klass || []).join(" ");
+  let h = '<div class="times"><div class="a">'+(spec.start ? hhmm(spec.start) : "—")+'</div></div>'+
+          '<div class="body">';
+  if(spec.lead)  h += '<div class="alab">'+esc(spec.lead)+'</div>';
+  h += '<div class="route">'+spec.name+'</div>';
+  if(spec.chips && spec.chips.length) h += '<div class="meta">'+spec.chips.join("")+'</div>';
+  if(spec.notes) h += '<div class="notes">'+esc(spec.notes)+'</div>';
+  if(spec.links && spec.links.length) h += '<div class="links">'+spec.links.join("")+'</div>';
+  h += spec.plans || "";
+  h += '<div class="rowbtns">'+(spec.btns || "")+'</div></div>';
+  if(spec.end)  h += endRow(hhmm(spec.end), spec.tail || "");
+  if(spec.done) h += endRow(hhmm(spec.done), "✓ done", "tickrow");
+  el.innerHTML = h;
+  wireBtns(el, spec.leg);
+  wirePlans(el, spec.leg);
   return el;
 }
 
-function renderTotals(){
-  const byC = totalsFor(trip());
-  const keys = Object.keys(byC);
-  const el = $("#totals");
-  // the figures themselves are in the header; the only thing left to add is
-  // what they come to together
-  if(keys.length < 2){ el.hidden = true; return; }
-  let gbp = 0, ok = true;
-  keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
-  el.hidden = !ok;
-  if(ok) el.innerHTML = '<span class="k">Combined</span><span class="v">'+money(gbp,"GBP")+
-                        '</span><span class="approx">at your saved rates</span>';
+const linkList = l => (l.links || [])
+  .filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()))
+  .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>');
+
+const modeChip = l => '<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>';
+function costChip(l){
+  const c = parseFloat(l.cost);
+  return (!isNaN(c) && c > 0) ? '<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>' : "";
 }
-
-function card(x, now){
-  const l = x.l, stop = l.kind === "stop";
-  const el = document.createElement("div");
-  let cls = "leg" + (stop ? " stop" : "") + (l.booked ? "" : " provisional");
-  if(l.doneAt) cls += " done ticked";
-  else if(x.e && now > x.e) cls += " done";
-  else if(x.s && x.e && now >= x.s && now <= x.e) cls += " live";
-  else if(x.s && x.s > now) cls += " next";
-  el.className = cls;
-
-  const sameDay = x.s && x.e && dayKey(x.s) === dayKey(x.e);
-  let h = '<div class="times"><div class="a">'+(x.s?hhmm(x.s):"—")+'</div></div><div class="body">';
-
-  h += '<div class="route">' + (stop
-        ? esc(l.place || l.mode || "Stop")
-        : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?")) + '</div>';
-  // (ports draw through portRow, not here)
-
-  const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
-  const cost = parseFloat(l.cost);
-  if(!isNaN(cost) && cost > 0) bits.push('<span class="chip money">'+money(cost, l.ccy||"GBP")+'</span>');
-  if(onlyOne(l)) bits.push('<span class="chip crit">only one</span>');
-  if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
-  if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
+/* WHICH and STATE, identical wherever they appear */
+function whichState(l){
+  const bits = [];
+  if(onlyOne(l)) bits.push('<span class="chip crit">last</span>');
   statusChips(l).forEach(c => bits.push(c));
   if(l.service) bits.push('<span class="chip svc">'+esc(l.service)+'</span>');
-  if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
-  h += '<div class="meta">'+bits.join("")+'</div>';
-
-  if(l.notes) h += '<div class="notes">'+esc(l.notes)+'</div>';
-
-  const links = (l.links||[]).filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()));
-  if(links.length) h += '<div class="links">'+links.map(a =>
-    '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
-
-  h += planChips(l);
-  h += '<div class="rowbtns">'+rowBtns(l, "", x)+'</div></div>';
-  if(x.e){
-    let tail = "";
-    if(stop && !sameDay){
-      const nights = Math.round((new Date(x.e.getFullYear(),x.e.getMonth(),x.e.getDate()) -
-                                 new Date(x.s.getFullYear(),x.s.getMonth(),x.s.getDate()))/86400000);
-      tail = short(x.e) + " · " + nights + (nights===1 ? " night" : " nights");
-    } else if(x.s){
-      const d = mins(x.e - x.s);
-      if(d >= 0) tail = dur(d);
-      if(!sameDay) tail = short(x.e) + (tail ? " · " + tail : "");
-    }
-    h += '<div class="endrow"><span class="t">'+hhmm(x.e)+'</span>'+
-         (tail ? '<span class="d">'+esc(tail)+'</span>' : '')+'</div>';
-  }
-  const at = parse(l.doneAt);
-  if(at){
-    h += '<div class="endrow tickrow"><span class="t">'+hhmm(at)+'</span><span class="d">✓ done</span></div>';
-  }
-  el.innerHTML = h;
-  wireBtns(el, l);
-  wirePlans(el, l);
-  return el;
+  if(l.ref)     bits.push('<span>'+esc(l.ref)+'</span>');
+  return bits;
 }
+
+// how long a stay ran, or how long a journey took
+function tailFor(x, stop){
+  if(!x.e) return "";
+  const sameDay = x.s && dayKey(x.s) === dayKey(x.e);
+  if(stop && !sameDay && x.s){
+    const nights = Math.round((new Date(x.e.getFullYear(), x.e.getMonth(), x.e.getDate()) -
+                               new Date(x.s.getFullYear(), x.s.getMonth(), x.s.getDate()))/86400000);
+    return esc(short(x.e) + " · " + nights + (nights === 1 ? " night" : " nights"));
+  }
+  if(!x.s) return "";
+  const d = mins(x.e - x.s);
+  let t = d >= 0 ? dur(d) : "";
+  if(!sameDay) t = short(x.e) + (t ? " · " + t : "");
+  return esc(t);
+}
+
+function stateClass(l, x, now, ticked){
+  if(ticked) return ["done", "ticked"];
+  if(x.e && now > x.e) return ["done"];
+  if(x.s && x.e && now >= x.s && now <= x.e) return ["live"];
+  if(x.s && x.s > now) return ["next"];
+  return [];
+}
+
+/* a journey, a stay or an event */
+function card(x, now){
+  const l = x.l, stop = l.kind === "stop";
+  return item({
+    leg: l, start: x.s, end: x.e, done: parse(l.doneAt),
+    klass: (stop ? ["stop"] : []).concat(l.booked ? [] : ["provisional"])
+             .concat(stateClass(l, x, now, !!l.doneAt)),
+    name: stop ? esc(l.place || l.mode || "Stop")
+               : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?"),
+    chips: [modeChip(l), costChip(l)].filter(Boolean).concat(whichState(l)),
+    notes: l.notes, links: linkList(l), plans: planChips(l),
+    btns: rowBtns(l, "", x), tail: tailFor(x, stop)
+  });
+}
+
+/* the two ends of a voyage */
+function anchor(it, now){
+  const x = it.x, l = x.l, boarding = it.type === "board";
+  const ticked = boarding ? !!l.doneAt : !!l.offDoneAt;
+  const when = boarding ? x.s : x.e;
+  const chips = [modeChip(l)];
+  if(boarding){
+    const on = startOf(x), off = endOf(x);
+    chips.push(costChip(l));
+    if(on && off) chips.push('<span>'+dur(mins(off - on))+' aboard</span>');
+    whichState(l).forEach(c => chips.push(c));
+  } else {
+    const roll = spanTotals(it.span);
+    Object.keys(roll).forEach(c => chips.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
+  }
+  return item({
+    leg: l, start: when, done: parse(l[boarding ? "doneAt" : "offDoneAt"]),
+    klass: ["anchor", boarding ? "board" : "disembark"]
+             .concat(ticked || (when && now > when) ? ["done"] : [])
+             .concat(ticked ? ["ticked"] : []),
+    lead: anchorWord(l.mode, boarding),
+    name: esc(boarding ? (l.from || "?") : (l.to || l.from || "?")),
+    chips: chips.filter(Boolean),
+    notes: boarding ? l.notes : "", links: boarding ? linkList(l) : [],
+    plans: planChips(l), btns: rowBtns(l, boarding ? "board" : "off", x)
+  });
+}
+
+/* a day in port */
+function portRow(x, now){
+  const l = x.l;
+  const by = (l.aboard || l.portOK) ? aboardBy(x) : null;   // shown only when confirmed
+  const chips = [costChip(l)].filter(Boolean).concat(whichState(l));
+  const agent = l.agent
+    ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'">☎ Call the port agent</a>'] : [];
+  return item({
+    leg: l, start: x.s, end: x.e, done: parse(l.doneAt),
+    klass: ["port"].concat(stateClass(l, x, now, !!l.doneAt)),
+    name: '⚓ '+esc(l.place || "Port call"),
+    chips: chips, links: agent, plans: planChips(l), btns: rowBtns(l, "", x),
+    tail: esc((x.e && x.s && dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" · " : "") + "sails" +
+              (by ? ", all aboard " + hhmm(by) : ""))
+  });
+}
+
+
 
 // "▸ Version A · 6 steps" — the way into a nested day
 
@@ -2410,6 +2407,41 @@ $("#mExport").addEventListener("click", () => {
   hideAll();
 });
 
+/* Fold an exported bundle into what you already have. Entries are re-keyed so
+   importing twice can't collide, and a plans-only file finds its host by the
+   entry id it names — either one arriving in the same file, or one you hold. */
+function absorb(list){
+  const roots = [], attached = [], legMap = {}, kept = [];
+
+  (list || []).forEach(t => {
+    const copy = Object.assign({}, t);
+    copy.id = uid();
+    copy.legs = (t.legs || []).map(l => {
+      const leg = Object.assign({kind:"move", cost:null, ccy:"GBP"}, l);
+      const was = leg.id;
+      leg.id = uid();
+      if(was) legMap[was] = leg.id;
+      return leg;
+    });
+    if(copy.active === undefined) copy.active = true;
+    kept.push({copy:copy, parent:t.parent || null});
+  });
+
+  kept.filter(k => !k.parent).forEach(k => {
+    k.copy.parent = null;
+    store.trips.push(k.copy); classify(k.copy); roots.push(k.copy);
+  });
+
+  kept.filter(k => k.parent).forEach(k => {
+    const host = legMap[k.parent] || (entryById(k.parent) ? k.parent : null);
+    if(!host) return;                      // nothing to hang it on — drop, don't orphan
+    k.copy.parent = host;
+    store.trips.push(k.copy); classify(k.copy); attached.push(k.copy);
+  });
+
+  return {roots:roots, attached:attached};
+}
+
 $("#mImport").addEventListener("click", () => $("#fileIn").click());
 $("#fileIn").addEventListener("change", e => {
   const file = e.target.files[0]; if(!file) return;
@@ -2430,8 +2462,7 @@ $("#fileIn").addEventListener("change", e => {
       if(p && Array.isArray(p.trips)){
         store = p;
         if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
-if(!store.settings) store.settings = {};
-const SET = () => store.settings || (store.settings = {});
+        if(!store.settings) store.settings = {};
       } else if(p && Array.isArray(p.legs)){           // old single-trip backup
         const t = newTrip(p.trip || "Restored trip");
         t.legs = p.legs.map(l => Object.assign({kind:"move", cost:null, ccy:"GBP"}, l));
