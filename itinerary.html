@@ -123,10 +123,19 @@
     background:var(--bg2); border:1px solid var(--line); border-radius:6px;
     padding:1px 6px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
   }
-  .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
+  .chip.state{
+    text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:750;
+    padding:2px 6px;
+  }
+  /* facts about the thing — one family, one colour */
+  .chip.fact{background:#1b2130; border-color:#2b3446; color:#a9b6cc}
+  .chip.fact.mode{text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:750}
+  .chip.fact.money{font-variant-numeric:tabular-nums; font-weight:700}
+  .chip.fact.svc{font-weight:700}
+  /* where you've got to — a different family entirely */
   .chip.done{background:#152a20; border-color:#25452f; color:#6fc79b}
   .chip.todo{background:none; border-style:dashed; color:var(--tx3)}
-  .chip.svc{background:#1b2733; border-color:#2c3d51; color:#9fd4ff; font-weight:700}
+  .meta.st{margin-top:4px}
   .chip.crit{background:#3a1f22; border-color:#5e2f33; color:#ff9b9b; font-weight:700}
   .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
@@ -574,7 +583,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "7.2";
+const APP_VERSION = "7.7";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
@@ -658,23 +667,32 @@ function classify(t){
   return touched;
 }
 
-let migrated = false;
-store.trips.forEach(t => {
-  const born = [];
-  t.legs.forEach(l => {
-    if(Array.isArray(l.stops) && l.stops.length){
-      l.stops.filter(s => s.name).forEach(s => born.push({
-        id: uid(), kind:"port", mode:"Port call", place:s.name,
-        start:s.in || "", end:s.out || "", cost:null, ccy:"GBP", links:[]
-      }));
-    }
-    delete l.stops;
-  });
-  if(born.length){ t.legs.push.apply(t.legs, born); migrated = true; }
-  if(classify(t)) migrated = true;
-  // v1.9: the fixed boarding fields become a list you can add to
-  t.legs.forEach(l => {
-    if(l.thereBy || l.boardBy || l.offAt){
+/* ===== migrations ====================================================
+   One ordered list, run once against a recorded schema number, so data
+   arriving by load or by import gets exactly the same treatment and can't
+   half-apply. Each step is idempotent; adding one means appending to the end. */
+const MIGRATIONS = [
+  // 1 — a journey's list of stops becomes port calls in their own right
+  t => {
+    let did = false;
+    const born = [];
+    t.legs.forEach(l => {
+      if(Array.isArray(l.stops) && l.stops.length){
+        l.stops.filter(s => s.name).forEach(s => born.push({
+          id: uid(), kind:"port", mode:"Port call", place:s.name,
+          start:s.in || "", end:s.out || "", cost:null, ccy:"GBP", links:[]
+        }));
+      }
+      if(l.stops !== undefined){ delete l.stops; did = true; }
+    });
+    if(born.length){ t.legs.push.apply(t.legs, born); did = true; }
+    return did;
+  },
+  // 2 — the three fixed boarding fields become a list you can add to
+  t => {
+    let did = false;
+    t.legs.forEach(l => {
+      if(!(l.thereBy || l.boardBy || l.offAt)) return;
       l.cues = l.cues || [];
       const w = (l.mode === "Cruise" || l.mode === "Ferry") ? ["Be aboard","All aboard","Off the ship"]
               : l.mode === "Flight" ? ["Be at the terminal","Gate closes","Off and clear"]
@@ -683,12 +701,27 @@ store.trips.forEach(t => {
       if(l.boardBy) l.cues.push({label:w[1], at:l.boardBy});
       if(l.offAt)   l.cues.push({label:w[2], at:l.offAt});
       delete l.thereBy; delete l.boardBy; delete l.offAt;
-      migrated = true;
-    }
-  });
-});
+      did = true;
+    });
+    return did;
+  },
+  // 3 — give every entry and every cue a settled kind
+  classify
+];
+
+// bring one itinerary fully up to date, wherever it came from
+function migrate(t){
+  let did = false;
+  MIGRATIONS.forEach(fn => { if(fn(t)) did = true; });
+  if(t.parent === undefined){ t.parent = null; did = true; }
+  if(t.active === undefined){ t.active = true; did = true; }
+  return did;
+}
+
+let migrated = false;
+store.trips.forEach(t => { if(migrate(t)) migrated = true; });
+if(store.schema !== MIGRATIONS.length){ store.schema = MIGRATIONS.length; migrated = true; }
 if(migrated) try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
-store.trips.forEach(t => { if(t.parent === undefined) t.parent = null; if(t.active === undefined) t.active = true; });
 const tops = () => store.trips.filter(t => !t.parent);
 if(!tops().length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
 if(!tops().some(t => t.id === store.active)) store.active = tops()[0].id;
@@ -725,6 +758,17 @@ const pad = n => String(n).padStart(2,"0");
 const hhmm = d => d ? pad(d.getHours())+":"+pad(d.getMinutes()) : "";
 const dayKey = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const short = d => d.toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"});
+/* How long until something, in one unit. "87d 22h" is arithmetic; "88 days"
+   is what you actually wanted to know. */
+function untilWord(m){
+  if(m < 1) return "moments";
+  if(m < 100) return m + (m === 1 ? " minute" : " minutes");
+  const h = Math.round(m/60);
+  if(h < 48) return h + (h === 1 ? " hour" : " hours");
+  const d = Math.round(m/1440);
+  return d + (d === 1 ? " day" : " days");
+}
+
 function dayLabel(d){
   const t = NOW(); t.setHours(0,0,0,0);
   const x = new Date(d); x.setHours(0,0,0,0);
@@ -739,11 +783,11 @@ const mins = ms => Math.round(ms/60000);
 /* The clock, so a day can be rehearsed in August. Everything that asks the time
    asks this, so setting it moves the whole app to that moment. */
 function NOW(){
-  const p = opt("misc", "pretend", "");
+  const p = opt("misc", "pretend");
   const d = p ? parse(p) : null;
   return d || new Date();
 }
-const pretending = () => { const p = opt("misc", "pretend", ""); return !!(p && parse(p)); };
+const pretending = () => { const p = opt("misc", "pretend"); return !!(p && parse(p)); };
 function dur(m){
   if(m < 1) return "0m";
   const d = Math.floor(m/1440), h = Math.floor((m%1440)/60), mm = m%60;
@@ -783,6 +827,7 @@ function owedFor(t, into){
 const MOVE_TYPES = ["Flight","Train","Cruise","Ferry","Coach","Bus","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
 const PORT_TYPES = ["Port call","Sea day","Tender port","Other"];
+const STAY_TYPES = STOP_TYPES;
 const ICONS = {Flight:"✈",Train:"🚆",Cruise:"🛳",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
   Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",
   "Port call":"⚓","Tender port":"⚓","Sea day":"🌊",Other:"•"};
@@ -814,7 +859,7 @@ const encloses = (span, t) => {
 // all-aboard: explicit if set, otherwise half an hour before the ship sails
 function aboardBy(port){
   if(port.l.aboard) return parse(port.l.aboard);
-  const m = +opt("misc", "aboardBefore", 30);
+  const m = +opt("misc", "aboardBefore");
   return (port.e && m > 0) ? new Date(port.e.getTime() - m*60000) : null;
 }
 
@@ -827,7 +872,7 @@ function sorted(){
 let dodged = null;   // an entry you've backed out of, so we stop dragging you back in
 
 function autoDrop(){
-  if(SET().autoDrop === false) return false;
+  if(!opt("misc", "autoDrop")) return false;
   const now = NOW();
   let found = null;
   store.trips.forEach(t => {
@@ -873,7 +918,6 @@ function render(){
 
   const dated = all.filter(x => x.s);
   const parts = [];
-  if(all.length) parts.push(all.length + (all.length===1 ? " entry" : " entries"));
   if(dated.length){
     const fmt = d => d.toLocaleDateString("en-GB",{day:"numeric", month:"short"});
     const a = fmt(dated[0].s), b = fmt(dated[dated.length-1].s);
@@ -920,22 +964,20 @@ function render(){
     const m = nextMoment(all, now);
     const when = live ? pick.e : startOf(pick);
     // name the moment for what it is, so it can't be read as the all-aboard time
-    const verb = pick.l.kind === "port" ? "Arrives"
-               : pick.l.kind === "stop" ? "Starts"
-               : anchorWord(pick.l.mode, true);
+    const verb = goWord(pick.l, true);
     const head = live
       ? "Until " + hhmm(pick.e) + (dayKey(pick.e)!==dayKey(now) ? " on "+short(pick.e) : "")
-      : verb + " " + (dayKey(when)===dayKey(now) ? "today" : dayLabel(when).split(" · ")[0].toLowerCase()) +
+      : verb + " " + (dayKey(when)===dayKey(now) ? "today" : dayLabel(when).split(" · ")[0]) +
         " at " + hhmm(when);
     // behind schedule, the planned times are fiction; say what to catch instead
     const body = lateBit
       ? (lateBit.alert ? '<div class="mt bad">'+esc(lateBit.alert)+'</div>' : '') +
         (lateBit.redo  ? '<div class="mt redo">'+esc(lateBit.redo)+'</div>' : '')
-      : '<div class="mt">'+esc(head)+((m && m.t <= when)
-          ? ' · '+dur(mins(m.t - now))+' to '+esc(m.label)
-          : ' · '+(live ? dur(mins(when - now))+' to go' : 'in '+dur(mins(when - now))))+'</div>';
-    f.innerHTML = '<div class="lab">' +
-      (live ? (pick === aboard ? "Aboard" : "In progress") : "Up next") + '</div>'+
+      : '<div class="mt">'+esc(head)+
+        ((m && m.t <= when) ? ' · '+dur(mins(m.t - now))+' to '+esc(m.label) : '')+'</div>';
+    const lab = live ? (pick === aboard ? "Aboard" : "In progress") + " · " + untilWord(mins(when - now)) + " left"
+                     : "Up next in " + untilWord(mins(when - now));
+    f.innerHTML = '<div class="lab">'+esc(lab)+'</div>'+
       '<div class="rt">'+esc(titleOf(pick))+'</div>' + body;
   } else f.hidden = true;
 
@@ -1017,8 +1059,8 @@ function render(){
     if(it.type === "board" || it.type === "disembark"){
       rail = null;                       // board/disembark cap the rail, they don't sit in it
       if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
-        const row = judge(it.x, it.t, prevEnd, prevTo, all, prevLeg);
-        if(row) list.appendChild(row);
+        const v = gapRow(judge(it.x, it.t, prevEnd, prevTo, all, prevLeg));
+        if(v) list.appendChild(v);
       }
       const ac = anchor(it, now);
       if(it.type === "board"){
@@ -1040,8 +1082,8 @@ function render(){
         const g = mins(it.t - prevEnd);
         const bothMoves = prevLeg && prevLeg.l.kind === "move" && it.x.l.kind === "move";
         if(g !== 0 || bothMoves){          // a zero gap in a hand-built plan is a slicing convention
-          const row = judge(it.x, it.t, prevEnd, prevTo, all, prevLeg);
-          if(row) list.appendChild(row);
+          const v = gapRow(judge(it.x, it.t, prevEnd, prevTo, all, prevLeg));
+          if(v) list.appendChild(v);
         }
       }
       const before = beforeCue(it.x);
@@ -1055,7 +1097,7 @@ function render(){
       if(it.port){
         const by = aboardBy(it.port), ends = it.x.e || it.x.s;
         if(by && ends && ends > by){
-          const w = gapRow("clash", "⚠ All aboard by " + hhmm(by) + " — this runs to " + hhmm(ends));
+          const w = gapRow({level:"clash", text:"⚠ All aboard by " + hhmm(by) + " — this runs to " + hhmm(ends)});
           w.classList.add("nested");
           box().appendChild(w);
         }
@@ -1066,20 +1108,6 @@ function render(){
 }
 
 // wording that fits how you actually board the thing
-function cueWords(mode){
-  if(mode === "Cruise" || mode === "Ferry") return {where:"the port",     last:"all aboard",  off:"Off the ship by"};
-  if(mode === "Flight")                     return {where:"the terminal", last:"gate closes", off:"Off and clear by"};
-  if(mode === "Train" || mode === "Coach" || mode === "Bus")
-                                            return {where:"the platform", last:"doors close", off:"Off by"};
-  return {where:"", last:"last call", off:"Off by"};
-}
-
-function cueRow(text, where){
-  const d = document.createElement("div");
-  d.className = "cue " + (where || "");
-  d.textContent = text;
-  return d;
-}
 
 // a cue belongs above the card if it lands at or before departure, below it otherwise
 /* Three kinds of thing hang off an entry:
@@ -1179,23 +1207,22 @@ function judge(x, at, prevEnd, prevTo, all, prevLeg){
   const conn = connMins(prevLeg || null, x);
   const slack = gap - conn;
 
-  if(gap < 0) return gapRow("clash", "⚠ Overlaps the previous item by " + dur(-gap));
-  if(slack < 0) return gapRow("clash", "⚠ " + dur(-slack) + " short");
-  if(gap >= +opt("misc", "maxGap", 360)) return null;
+  if(gap < 0)   return {level:"clash", text:"⚠ Overlaps the previous item by " + dur(-gap)};
+  if(slack < 0) return {level:"clash", text:"⚠ " + dur(-slack) + " short"};
+  if(gap >= +opt("misc", "maxGap")) return null;
 
   // All time is spare until you give it a job. Following the plan, the only
   // question is "what next, and will I make it" — margin is a setup-time concern.
-  const ok = txt => opt("misc", "showSpare", false) ? gapRow("ok", txt) : null;
+  const ok = txt => opt("misc", "showSpare") ? {level:"ok", text:txt} : null;
 
   const target = targetFor(x);
   if(target){
     const eta = new Date(prevEnd.getTime() + conn*60000);
-    if(eta > target.t) return gapRow("tight", "⚠ ETA " + dur(mins(eta - target.t)) + " later than target");
+    if(eta > target.t) return {level:"tight", text:"⚠ ETA " + dur(mins(eta - target.t)) + " later than target"};
     return ok(dur(slack) + " spare");
   }
 
   // Nothing left to say: if the sums work, the plan says you make it.
-  // Being close to the line is not news — that is what "Late?" is for.
   return ok(dur(slack) + " spare");
 }
 
@@ -1378,7 +1405,7 @@ function setPretend(d){
   save(); render();
 }
 function openPretend(){
-  $("#f_pretend").value = opt("misc", "pretend", "") || localISO(roundMin(NOW()));
+  $("#f_pretend").value = opt("misc", "pretend") || localISO(roundMin(NOW()));
   show("#pretend");
 }
 
@@ -1451,18 +1478,14 @@ function fallbackOf(l){
   return {next: parse(f.next), every: f.every || null, last: parse(f.last)};
 }
 
-function fallbackRow(l){
+function fallbackText(l){
   const f = fallbackOf(l);
   if(!f) return null;
   const bits = [];
-  if(f.next) bits.push("next " + hhmm(f.next));
+  if(f.next)  bits.push("next " + hhmm(f.next));
   if(f.every) bits.push((f.next ? "then " : "every ") + "~" + dur(f.every));
-  if(f.last) bits.push("last " + hhmm(f.last));
-  if(!bits.length) return null;
-  const d = document.createElement("div");
-  d.className = "fallback";
-  d.textContent = "↳ " + bits.join(", ");
-  return d;
+  if(f.last)  bits.push("last " + hhmm(f.last));
+  return bits.length ? bits.join(", ") : null;
 }
 
 // the first departure at or after you can actually get there — only from what you've recorded
@@ -1480,22 +1503,25 @@ function nextDeparture(required, fb){
   return null;
 }
 
-function gapRow(cls, text){
+/* the view side: an answer from the engine, drawn */
+function row(cls, text){
   const d = document.createElement("div");
-  d.className = "gap " + cls;
+  d.className = cls;
   d.textContent = text;
   return d;
 }
+const gapRow = v => v ? row("gap " + v.level, v.text) : null;
+const fallbackRow = l => { const t = fallbackText(l); return t ? row("fallback", "↳ " + t) : null; };
 
 function statusChips(l){
   const out = [];
-  if(l.booked) out.push('<span class="chip done">booked</span>');
-  if(l.paid) out.push('<span class="chip done">paid</span>');
-  if(l.checkedIn) out.push('<span class="chip done">checked in</span>');
+  if(l.booked) out.push('<span class="chip done state">booked</span>');
+  if(l.paid) out.push('<span class="chip done state">paid</span>');
+  if(l.checkedIn) out.push('<span class="chip done state">checked in</span>');
   // only say "to book" where you've recorded money — you don't pay for a walk,
   // and a tender isn't bookable at all
   const c = parseFloat(l.cost);
-  if(!l.booked && !isNaN(c) && c > 0) out.push('<span class="chip todo">to book</span>');
+  if(!l.booked && !isNaN(c) && c > 0) out.push('<span class="chip todo state">to book</span>');
   return out;
 }
 
@@ -1508,11 +1534,10 @@ function titleOf(x){
 }
 
 // the label sits beside the vehicle's own time, so it has to describe the vehicle
-function anchorWord(mode, start){
-  if(mode === "Cruise" || mode === "Ferry") return start ? "Sails" : "Arrives";
-  if(mode === "Flight")                     return start ? "Departs" : "Lands";
-  return start ? "Departs" : "Arrives";
-}
+/* You are the subject throughout: you depart, you arrive. A journey begins by
+   departing and ends by arriving; a stay or a port call is the other way round.
+   One rule, every mode — no sailing, no landing, no boarding. */
+const goWord = (l, start) => ((l.kind === "move") === !!start) ? "Depart" : "Arrive";
 
 /* the cards at each end of a span */
 
@@ -1607,6 +1632,7 @@ function item(spec){
   if(spec.lead)  h += '<div class="alab">'+esc(spec.lead)+'</div>';
   h += '<div class="route">'+spec.name+'</div>';
   if(spec.chips && spec.chips.length) h += '<div class="meta">'+spec.chips.join("")+'</div>';
+  if(spec.state && spec.state.length) h += '<div class="meta st">'+spec.state.join("")+'</div>';
   if(spec.notes) h += '<div class="notes">'+esc(spec.notes)+'</div>';
   if(spec.links && spec.links.length) h += '<div class="links">'+spec.links.join("")+'</div>';
   h += spec.plans || "";
@@ -1623,18 +1649,25 @@ const linkList = l => (l.links || [])
   .filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()))
   .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>');
 
-const modeChip = l => '<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>';
+const modeChip = l => '<span class="chip fact mode">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>';
 function costChip(l){
   const c = parseFloat(l.cost);
-  return (!isNaN(c) && c > 0) ? '<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>' : "";
+  return (!isNaN(c) && c > 0) ? '<span class="chip fact money">'+money(c, l.ccy||"GBP")+'</span>' : "";
 }
 /* WHICH and STATE, identical wherever they appear */
-function whichState(l){
+/* Two rows, because they change at different rates. What a thing IS — mode,
+   price, which service, your reference — is settled the moment you record it.
+   Where you've GOT TO with it moves as you book, pay and check in, and wants
+   to be scannable straight down the itinerary without the facts interrupting. */
+const factChips = l => [modeChip(l), costChip(l)]
+  .concat(l.service ? ['<span class="chip fact svc">'+esc(l.service)+'</span>'] : [])
+  .concat(l.ref ? ['<span class="chip fact">'+esc(l.ref)+'</span>'] : [])
+  .filter(Boolean);
+
+function stateChips(l){
   const bits = [];
-  if(onlyOne(l)) bits.push('<span class="chip crit">last</span>');
+  if(onlyOne(l)) bits.push('<span class="chip crit state">last</span>');
   statusChips(l).forEach(c => bits.push(c));
-  if(l.service) bits.push('<span class="chip svc">'+esc(l.service)+'</span>');
-  if(l.ref)     bits.push('<span>'+esc(l.ref)+'</span>');
   return bits;
 }
 
@@ -1671,7 +1704,7 @@ function card(x, now){
              .concat(stateClass(l, x, now, !!l.doneAt)),
     name: stop ? esc(l.place || l.mode || "Stop")
                : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?"),
-    chips: [modeChip(l), costChip(l)].filter(Boolean).concat(whichState(l)),
+    chips: factChips(l), state: stateChips(l),
     notes: l.notes, links: linkList(l), plans: planChips(l),
     btns: rowBtns(l, "", x), tail: tailFor(x, stop)
   });
@@ -1682,12 +1715,10 @@ function anchor(it, now){
   const x = it.x, l = x.l, boarding = it.type === "board";
   const ticked = boarding ? !!l.doneAt : !!l.offDoneAt;
   const when = boarding ? x.s : x.e;
-  const chips = [modeChip(l)];
+  const chips = boarding ? factChips(l) : [modeChip(l)];
   if(boarding){
     const on = startOf(x), off = endOf(x);
-    chips.push(costChip(l));
-    if(on && off) chips.push('<span>'+dur(mins(off - on))+' aboard</span>');
-    whichState(l).forEach(c => chips.push(c));
+    if(on && off) chips.push('<span class="chip fact">'+dur(mins(off - on))+' aboard</span>');
   } else {
     const roll = spanTotals(it.span);
     Object.keys(roll).forEach(c => chips.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
@@ -1697,9 +1728,9 @@ function anchor(it, now){
     klass: ["anchor", boarding ? "board" : "disembark"]
              .concat(ticked || (when && now > when) ? ["done"] : [])
              .concat(ticked ? ["ticked"] : []),
-    lead: anchorWord(l.mode, boarding),
+    lead: goWord(l, boarding),
     name: esc(boarding ? (l.from || "?") : (l.to || l.from || "?")),
-    chips: chips.filter(Boolean),
+    chips: chips.filter(Boolean), state: boarding ? stateChips(l) : [],
     notes: boarding ? l.notes : "", links: boarding ? linkList(l) : [],
     plans: planChips(l), btns: rowBtns(l, boarding ? "board" : "off", x)
   });
@@ -1709,16 +1740,16 @@ function anchor(it, now){
 function portRow(x, now){
   const l = x.l;
   const by = (l.aboard || l.portOK) ? aboardBy(x) : null;   // shown only when confirmed
-  const chips = [costChip(l)].filter(Boolean).concat(whichState(l));
+  const chips = factChips(l);
   const agent = l.agent
     ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'">☎ Call the port agent</a>'] : [];
   return item({
     leg: l, start: x.s, end: x.e, done: parse(l.doneAt),
     klass: ["port"].concat(stateClass(l, x, now, !!l.doneAt)),
     name: '⚓ '+esc(l.place || "Port call"),
-    chips: chips, links: agent, plans: planChips(l), btns: rowBtns(l, "", x),
-    tail: esc((x.e && x.s && dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" · " : "") + "sails" +
-              (by ? ", all aboard " + hhmm(by) : ""))
+    chips: chips, state: stateChips(l), links: agent, plans: planChips(l), btns: rowBtns(l, "", x),
+    tail: esc((x.e && x.s && dayKey(x.e) !== dayKey(x.s) ? short(x.e) + " · " : "") +
+              (by ? "all aboard " + hhmm(by) : ""))
   });
 }
 
@@ -1916,7 +1947,7 @@ function suggestEnd(){
   const mode = $("#f_mode").value;
   let t;
   if(mode === "Hotel" || mode === "Apartment"){
-    const hm = /^(\d{1,2}):(\d{2})$/.exec(String(opt("misc", "checkout", "10:00"))) || [0,10,0];
+    const hm = /^(\d{1,2}):(\d{2})$/.exec(String(opt("misc", "checkout"))) || [0,10,0];
     t = new Date(s); t.setDate(t.getDate() + 1); t.setHours(+hm[1], +hm[2], 0, 0);
     if(t <= s) t = new Date(s.getTime() + 60*60000);
   } else {
@@ -2221,7 +2252,66 @@ document.querySelectorAll(".quick button[data-add]").forEach(b => {
 
 
 /* Durations are stored in minutes but typed however suits: 90, 2h, 1.5h, 7d. */
+/* ===== settings, declared once =======================================
+   The pane is generated from this and opt() falls back to it, so a setting
+   cannot exist without something reading it, nor a constant be read without
+   appearing here. Add a row and it works in both places. */
+const SETTINGS = [
+  {sec:"The day"},
+  {g:"misc", k:"autoDrop",  d:true,  t:"toggle", n:"Open plans on the day"},
+  {g:"misc", k:"showSpare", d:false, t:"toggle", n:"Show spare time (for setting up)"},
+
+  {sec:"Rehearsal", note:"move the whole app to a moment, to walk a day through before you live it"},
+  {g:"misc", k:"pretend", d:"", t:"dt", n:"Pretend the time is"},
+
+  {sec:"Assumptions", note:"used in the sums; never shown to you as fact"},
+  {g:"misc", k:"aboardBefore", d:30,      t:"dur",  n:"All aboard before sailing"},
+  {g:"misc", k:"checkout",     d:"10:00", t:"text", n:"Hotel check-out, next morning"},
+  {g:"misc", k:"maxGap",       d:360,     t:"dur",  n:"Ignore gaps longer than"},
+
+  {sec:"Typical length", note:"what an end-time picker opens at"},
+  {each:() => MOVE_TYPES, g:"typical", t:"dur", d:m => TYPICAL[m] || 60},
+  {each:() => STAY_TYPES.filter(m => m !== "Hotel" && m !== "Apartment"),
+                         g:"typical", t:"dur", d:m => TYPICAL[m] || 60},
+  {each:() => PORT_TYPES, g:"typical", t:"dur", d:m => TYPICAL[m] || 540},
+
+  {sec:"Can't be missed by default", note:"tap to change what a new entry starts as"},
+  {each:() => MOVE_TYPES, g:"hard", t:"toggle", d:m => !!SEED_FIXED[m], row:"chips"},
+
+  {sec:"Preset times", note:"what the buttons in the cue list fill in"},
+  {g:"preset", k:"there",   d:150, t:"dur", n:"Be there, before departure"},
+  {g:"preset", k:"bag",     d:60,  t:"dur", n:"Bag drop, before departure"},
+  {g:"preset", k:"gate",    d:30,  t:"dur", n:"Gate / all aboard, before departure"},
+  {g:"preset", k:"off",     d:40,  t:"dur", n:"Off and clear, after arrival"},
+  {g:"preset", k:"walk",    d:10,  t:"dur", n:"Walk to it"},
+  {g:"preset", k:"leave",   d:30,  t:"dur", n:"Leave for this, before start"},
+  {g:"preset", k:"getto",   d:15,  t:"dur", n:"Getting there"},
+  {g:"preset", k:"arrive",  d:10,  t:"dur", n:"Be there, before start"},
+  {g:"preset", k:"out",     d:0,   t:"dur", n:"Out by, after end"},
+  {g:"preset", k:"after",   d:10,  t:"dur", n:"Leaving, after end"},
+  {g:"preset", k:"ashore",  d:30,  t:"dur", n:"Ashore by, after docking"},
+  {g:"preset", k:"back",    d:45,  t:"dur", n:"Back at gangway, before sailing"},
+  {g:"preset", k:"shuttle", d:60,  t:"dur", n:"Last shuttle, before sailing"},
+  {g:"preset", k:"tender",  d:30,  t:"dur", n:"Tender queue"},
+
+  {sec:"Conversion rates", note:"pounds per unit"},
+  {rates:true}
+];
+
+// the same table, indexed for lookup
+const DEFAULTS = (() => {
+  const m = {};
+  SETTINGS.forEach(r => {
+    if(!r.g) return;
+    m[r.g] = m[r.g] || {};
+    if(r.k) m[r.g][r.k] = r.d;
+    else if(r.each) r.each().forEach(x => { m[r.g][x] = typeof r.d === "function" ? r.d(x) : r.d; });
+  });
+  return m;
+})();
+
 function opt(group, key, dflt){
+  if(dflt === undefined) dflt = (DEFAULTS[group] || {})[key];
   const g = SET()[group];
   const v = g ? g[key] : undefined;
   return (v === undefined || v === null || v === "") ? dflt : v;
@@ -2296,97 +2386,47 @@ function section(title, note){
   return d;
 }
 
-const STAY_TYPES = STOP_TYPES;
 function renderSettings(){
   const box = $("#setBody"); box.innerHTML = "";
-  const add = el => box.appendChild(el);
-
-  add(section("Behaviour"));
-  const beh = document.createElement("div"); beh.className = "chips wrap";
-  beh.appendChild(setToggle("misc", "autoDrop", true, "Open plans on the day"));
-  beh.appendChild(setToggle("misc", "showSpare", false, "Show spare time (for setting up)"));
-  add(beh);
-  add(setField("misc", "maxGap", 360, {name:"Ignore gaps longer than", dur:true}));
-  add(setField("misc", "aboardBefore", 30, {name:"All aboard before sailing", dur:true}));
-  add(setField("misc", "checkout", "10:00", {name:"Hotel check-out, next morning", text:true}));
-
-  add(section("Rehearsal", "move the whole app to a moment, to walk a day through before you live it"));
-  add(setField("misc", "pretend", "", {name:"Pretend the time is", dt:true}));
-
-  add(section("Journeys", "typical length used when you open an end-time picker"));
-  MOVE_TYPES.forEach(m => add(typeRow(m)));
-
-  add(section("Can't be missed by default", "tap to change what a new entry starts as"));
-  const hardRow = document.createElement("div"); hardRow.className = "chips wrap";
-  MOVE_TYPES.forEach(m => hardRow.appendChild(setToggle("hard", m, !!SEED_FIXED[m], m)));
-  add(hardRow);
-
-  add(section("Stays and events", "typical length used when you open an end-time picker"));
-  STAY_TYPES.filter(m => m !== "Hotel" && m !== "Apartment")
-    .forEach(m => add(setField("typical", m, TYPICAL[m] || 60, {name:m, dur:true})));
-
-  add(section("Port calls"));
-  PORT_TYPES.forEach(m => add(setField("typical", m, TYPICAL[m] || 540, {name:m, dur:true})));
-
-  add(section("Preset times", "what the buttons in the buffers list fill in"));
-  [["there","Be there, before departure",150],["bag","Bag drop, before departure",60],
-   ["gate","Gate / all aboard, before departure",30],["off","Off and clear, after arrival",40],
-   ["walk","Walk to it",10],["leave","Leave for this, before start",30],
-   ["getto","Getting there",15],["arrive","Be there, before start",10],["out","Out by, after end",0],
-   ["after","Leaving, after end",10],["ashore","Ashore by, after docking",30],
-   ["back","Back at gangway, before sailing",45],["shuttle","Last shuttle, before sailing",60],
-   ["tender","Tender queue",30]
-  ].forEach(([k, name, d]) => add(setField("preset", k, d, {name:name, dur:true})));
-
-  add(section("Conversion rates", "pounds per unit"));
-  ["EUR","USD","CHF"].forEach(c => {
-    const wrap = document.createElement("div");
-    wrap.className = "setrow";
-    wrap.innerHTML = '<span class="sname">1 '+c+' =</span><input type="number" step="0.001" inputmode="decimal" value="'+
-      esc(String(store.rate[c]))+'">';
-    wrap.querySelector("input").addEventListener("change", e => {
-      const v = parseFloat(e.target.value);
-      if(!isNaN(v) && v > 0){ store.rate[c] = v; save(); render(); }
+  let chips = null;
+  SETTINGS.forEach(r => {
+    if(r.sec){ chips = null; box.appendChild(section(r.sec, r.note)); return; }
+    if(r.rates){ chips = null; rateRows().forEach(x => box.appendChild(x)); return; }
+    const keys = r.k ? [r.k] : r.each();
+    keys.forEach(k => {
+      const dflt = typeof r.d === "function" ? r.d(k) : r.d;
+      const name = r.n || k;
+      if(r.t === "toggle"){
+        if(r.row === "chips" || !r.k){
+          if(!chips){ chips = document.createElement("div"); chips.className = "chips wrap"; box.appendChild(chips); }
+          chips.appendChild(setToggle(r.g, k, dflt, name));
+        } else {
+          if(!chips){ chips = document.createElement("div"); chips.className = "chips wrap"; box.appendChild(chips); }
+          chips.appendChild(setToggle(r.g, k, dflt, name));
+        }
+        return;
+      }
+      chips = null;
+      box.appendChild(setField(r.g, k, dflt, {
+        name: name, dur: r.t === "dur", text: r.t === "text", dt: r.t === "dt"
+      }));
     });
-    add(wrap);
   });
-
-  const v = document.createElement("div");
-  v.className = "ver"; v.textContent = "Itinerary · version " + APP_VERSION;
-  add(v);
 }
 
-
-function typeRow(m){
-  const d = document.createElement("div");
-  d.className = "setrow";
-  d.innerHTML = '<span class="sname">'+esc(m)+'</span>';
-  [["typical", TYPICAL[m] || 60, true]].forEach(([group, dflt, isDur]) => {
-    const stored = SET()[group] && SET()[group][m] != null ? SET()[group][m] : null;
-    const i = document.createElement("input");
-    if(isDur){ i.type = "text"; }
-    else { i.type = "number"; i.min = "0"; i.step = "1"; i.inputMode = "numeric"; }
-    i.value = stored == null ? "" : (isDur ? showDur(stored) : stored);
-    i.placeholder = isDur ? showDur(dflt) : dflt;
+function rateRows(){
+  return ["EUR","USD","CHF"].map(c => {
+    const wrap = document.createElement("div");
+    wrap.className = "setrow";
+    wrap.innerHTML = '<span class="sname">1 '+c+' =</span><input type="number" step="0.001" '+
+      'inputmode="decimal" value="'+esc(String(store.rate[c]))+'">';
+    const i = wrap.querySelector("input");
     i.addEventListener("change", () => {
-      const g = SET()[group] || (SET()[group] = {});
-      const raw = i.value.trim();
-      if(raw === "") delete g[m];
-      else if(isDur){
-        const v = parseDur(raw);
-        if(v == null || v < 0){
-          const live = g[m] != null ? g[m] : null;
-          i.value = live == null ? "" : showDur(live);
-          toast("Try 90, 2h or 7d"); return;
-        }
-        g[m] = v; i.value = showDur(v);
-      }
-      else g[m] = parseInt(raw, 10);
-      save(); render();
+      const v = parseFloat(i.value);
+      if(!isNaN(v) && v > 0){ store.rate[c] = v; save(); render(); }
     });
-    d.appendChild(i);
+    return wrap;
   });
-  return d;
 }
 
 $("#mSettings").addEventListener("click", () => { hideAll(); renderSettings(); show("#settings"); });
@@ -2429,14 +2469,14 @@ function absorb(list){
 
   kept.filter(k => !k.parent).forEach(k => {
     k.copy.parent = null;
-    store.trips.push(k.copy); classify(k.copy); roots.push(k.copy);
+    store.trips.push(k.copy); migrate(k.copy); roots.push(k.copy);
   });
 
   kept.filter(k => k.parent).forEach(k => {
     const host = legMap[k.parent] || (entryById(k.parent) ? k.parent : null);
     if(!host) return;                      // nothing to hang it on — drop, don't orphan
     k.copy.parent = host;
-    store.trips.push(k.copy); classify(k.copy); attached.push(k.copy);
+    store.trips.push(k.copy); migrate(k.copy); attached.push(k.copy);
   });
 
   return {roots:roots, attached:attached};
@@ -2470,11 +2510,10 @@ $("#fileIn").addEventListener("change", e => {
       } else throw 0;
       store.trips.forEach(t => {
         if(!t.id) t.id = uid();
-        if(t.parent === undefined) t.parent = null;
-        if(t.active === undefined) t.active = true;
         t.legs.forEach(l => { if(!l.id) l.id = uid(); if(!l.kind) l.kind = "move"; });
-        classify(t);
+        migrate(t);
       });
+      store.schema = MIGRATIONS.length;
       if(!tops().length){ const t = newTrip("Restored trip"); store.trips.push(t); }
       if(!tops().some(t => t.id === store.active)) store.active = tops()[0].id;
       store.viewing = store.active;
