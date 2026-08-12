@@ -104,6 +104,7 @@
   .cue.hashard{border-left-color:#6b5426}
   .cue .hard{color:var(--warn); font-weight:650}
   .cue .soft{color:#c3b0ff}
+  .cue .conn{color:#7fb3dc}
   .cue.before{margin-bottom:2px}
   .cue.after{margin-top:2px}
   .leg + .cue.before{margin-top:8px}
@@ -229,7 +230,42 @@
   .seg.small{margin-bottom:0}
   .seg.small button{font-size:12.5px; padding:8px 4px}
   .seg.small button.on{background:#3f3668; color:#e6dcff}
+  .cap3{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--tx3);
+    font-weight:700; margin:11px 0 4px}
+  .fallback{
+    font-size:12px; color:var(--tx3); padding:4px 0 4px 12px; margin:2px 0 0 8px;
+    border-left:2px dotted var(--line); font-variant-numeric:tabular-nums;
+  }
+  .rhead{font-size:13px; color:var(--tx2); margin:14px 0 10px}
+  .rstep{
+    font-size:13.5px; color:var(--tx2); padding:8px 0 8px 12px; line-height:1.4;
+    border-left:2px solid var(--line); margin-left:4px;
+  }
+  .rstep.ok{color:#7fdcae; border-color:#25452f}
+  .rstep.warn{color:var(--warn); border-color:#4a3a1a}
+  .rstep.bad{color:var(--bad); border-color:#4a2323; font-weight:600}
+  .rverdict{
+    margin-top:14px; padding:11px 13px; border-radius:12px; background:var(--card);
+    border:1px solid var(--line); font-size:13.5px; color:var(--tx);
+  }
   .chips{display:flex; gap:8px; margin-top:2px}
+  .chips.wrap{flex-wrap:wrap}
+  .chips.wrap .chipbtn{flex:0 0 auto; padding:8px 12px; font-size:12.5px}
+  .chipbtn{
+    background:var(--card); border:1px dashed var(--line); color:var(--tx3);
+    border-radius:11px; padding:10px 4px; font:600 13px inherit; font-family:inherit;
+  }
+  .chipbtn.on{background:#152a20; border-style:solid; border-color:#25452f; color:#7fdcae}
+  .chipbtn.on::before{content:"✓ "}
+  .setrow{display:flex; align-items:center; gap:8px; margin-top:7px}
+  .setrow .sname{flex:1 1 auto; min-width:0; font-size:13px; color:var(--tx2)}
+  .setrow input{flex:0 0 84px; padding:8px 9px; font-size:15px; text-align:right}
+  .setrow.trio input{flex:0 0 62px}
+  .setrow .sunit{flex:0 0 auto; font-size:11.5px; color:var(--tx3)}
+  .setrow.head{margin-top:10px}
+  .setrow.head span{flex:0 0 62px; text-align:center; font-size:10.5px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--tx3); font-weight:700}
+  .setrow.head .sname{flex:1 1 auto}
   .chips button{
     flex:1; background:var(--card); border:1px dashed var(--line); color:var(--tx3);
     border-radius:11px; padding:10px 4px; font:600 13px inherit; font-family:inherit;
@@ -251,10 +287,12 @@
   }
   .cuerow .ck{
     flex:0 0 auto; background:var(--bg2); border:1px solid #3f3668; color:#c3b0ff;
-    border-radius:11px; padding:0 11px; font:700 11.5px inherit; font-family:inherit;
-    letter-spacing:.04em; text-transform:uppercase;
+    border-radius:11px; padding:0 10px; font:700 11px inherit; font-family:inherit;
+    letter-spacing:.03em; text-transform:uppercase; white-space:nowrap;
   }
-  .cuerow .ck.hard{border-color:#5a4520; color:var(--warn); background:#241d10}
+  .cuerow .ck.deadline{border-color:#5a4520; color:var(--warn); background:#241d10}
+  .cuerow .ck.connection{border-color:#26455e; color:#7fb3dc; background:#101f2b}
+  .cuerow .cm{flex:1 1 0; min-width:0; font-size:15px; padding:9px 10px}
 
   .linkrow{display:flex; gap:8px; margin-top:8px}
   .linkrow input:first-child{flex:0 0 34%}
@@ -350,7 +388,12 @@
     <label>Buffers and deadlines <span class="opt">(optional — anything you must do before or after)</span></label>
     <div id="cueRows"></div>
     <div class="quick" id="cuePresets"></div>
-    <div class="hint">Presets fill a sensible time from the ones above — change any of them. Anything at or before the start shows above the card; anything at or after the end shows below it. For a port call, the All-aboard field is separate because it also drives the warnings on anything you book ashore.</div>
+    <div class="hint">
+      <b>Deadline</b> — a moment when something is withdrawn.
+      <b>Conn</b> — minutes you must spend getting there or away; it moves with the entry.
+      <b>Slack</b> — your own target. Crossing it isn't failure, it's the point past which you stop being able to reason.
+      Tap the label on a row to change which it is.
+    </div>
   </div>
 
   <div id="rowAboard" hidden>
@@ -362,6 +405,17 @@
   <div class="money">
     <input id="f_cost" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
     <select id="f_ccy"><option>GBP</option><option>EUR</option><option>USD</option><option>CHF</option></select>
+  </div>
+
+  <div id="rowFallback">
+    <label>If you miss it <span class="opt">— the next one, and the last</span></label>
+    <div class="cap3">Next departure</div>
+    <input id="f_next" type="datetime-local">
+    <div class="cap3">Then every ~ minutes</div>
+    <input id="f_every" type="number" min="1" step="1" inputmode="numeric" placeholder="30">
+    <div class="cap3">Last departure</div>
+    <input id="f_last" type="datetime-local">
+    <div class="hint">Only what you fill in is used, and only what you fill in is shown. Nothing here is estimated.</div>
   </div>
 
   <label id="lblMiss">Start time <span class="opt">— fixed means it goes without you</span></label>
@@ -406,6 +460,26 @@
   <div class="actions" id="plansRow" hidden><button class="btn" id="plansBtn">Plans for this entry…</button></div>
 </div>
 
+<!-- Settings -->
+<div class="sheet" id="settings">
+  <div class="grab"></div>
+  <h2>Settings</h2>
+  <div id="setBody"></div>
+  <div class="actions">
+    <button class="btn danger" id="setReset">Reset</button>
+    <button class="btn" id="setClose">Close</button>
+  </div>
+</div>
+
+<!-- What if I'm late -->
+<div class="sheet" id="ripple">
+  <div class="grab"></div>
+  <h2>If you're running late</h2>
+  <div class="seg small" id="lateRow"></div>
+  <div id="rippleBody"></div>
+  <div class="actions"><button class="btn" id="rippleClose">Close</button></div>
+</div>
+
 <!-- Trips -->
 <div class="sheet" id="trips">
   <div class="grab"></div>
@@ -421,7 +495,7 @@
 <div class="sheet" id="menu">
   <div class="grab"></div>
   <h2>Options</h2>
-  <button class="menuitem" id="mRate">Conversion rate<small id="rateNow"></small></button>
+  <button class="menuitem" id="mSettings">Settings<small>Warnings, thresholds, conversion rates</small></button>
   <button class="menuitem" id="mText">Copy this itinerary as text<small>Plain text for a message or email</small></button>
   <button class="menuitem" id="mShare">Export this itinerary<small>Just this one, with its plans — for sharing or moving</small></button>
   <button class="menuitem" id="mExport">Export full backup<small>Everything, as a .json file</small></button>
@@ -437,7 +511,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "2.8";
+const APP_VERSION = "3.7";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -467,6 +541,8 @@ try{
 }catch(e){}
 if(!store) store = blank();
 if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
+if(!store.settings) store.settings = {};
+const SET = () => store.settings || (store.settings = {});
 if(!store.trips.length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
 // v1.5: port calls that used to live inside a journey become entries in their own right
 // a cue is either their deadline or your buffer; guess once from the wording,
@@ -477,7 +553,7 @@ function classify(t){
   let touched = false;
   (t.legs || []).forEach(l => {
     if(l.fixed !== true && l.fixed !== false){        // give every entry a real answer
-      l.fixed = !!SEED_FIXED[l.mode] || (l.cues || []).some(c => c.hard && c.at);
+      l.fixed = !!opt("hard", l.mode, !!SEED_FIXED[l.mode]) || (l.cues || []).some(c => c.hard && c.at);
       touched = true;
     }
     if(l.booked === undefined){                        // read what you'd already written down
@@ -489,8 +565,24 @@ function classify(t){
     }
   });
   (t.legs || []).forEach(l => (l.cues || []).forEach(c => {
-    if(c.hard === undefined){
-      c.hard = /(gate|clos|all aboard|last |deadline|cut-?off|check-?in)/i.test(c.label || "");
+    if(!c.kind){
+      const s = c.label || "";
+      c.kind = /(gate|clos|all aboard|last |deadline|cut-?off|check-?in)/i.test(s) ? "deadline"
+             : /(walk|transfer|reclaim|collect|change|shuttle to|drive|taxi to|get to)/i.test(s) ? "connection"
+             : "slack";
+      if(c.hard && c.kind !== "deadline") c.kind = "deadline";
+      touched = true;
+    }
+    // a connection is a duration; convert the old absolute time into one
+    if(c.kind === "connection" && c.mins === undefined){
+      const t0 = parse(c.at), a = parse(l.start), b = parse(l.end);
+      let m = 10;
+      const said = /(\d+)\s*(?:min|mins|minutes|m)\b/i.exec(c.label || "");
+      if(said) m = Math.max(1, +said[1]);
+      else if(t0 && a && t0 <= a) m = Math.max(1, Math.round((a - t0)/60000));
+      else if(t0 && b && t0 >= b) m = Math.max(1, Math.round((t0 - b)/60000));
+      c.mins = m;
+      c.side = (t0 && a && t0 <= a) ? "before" : "after";
       touched = true;
     }
   }));
@@ -622,7 +714,12 @@ const TIGHT = {
   Cruise:120, Ferry:45, Flight:60, Train:12, Coach:15, Bus:10, "Tube / Metro":8,
   Taxi:10, Car:10, Walk:5, Transfer:10, "Port call":30, "Tender port":45
 };
-const tightFor = l => TIGHT[l.mode] != null ? TIGHT[l.mode] : 20;
+function opt(group, key, dflt){
+  const g = SET()[group];
+  const v = g ? g[key] : undefined;
+  return (v === undefined || v === null || v === "") ? dflt : v;
+}
+const tightFor = l => +opt("spare", l.mode, TIGHT[l.mode] != null ? TIGHT[l.mode] : 20);
 
 const DAY = 86400000;
 const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -636,8 +733,9 @@ function isSpan(x, all){
   return all.some(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.s >= x.s && y.s <= x.e);
 }
 // the time you act on, as against the time the vehicle moves
-function startOf(x){ const b = cuesFor(x, "before"); return b.length ? b[0].t : x.s; }
-function endOf(x){ const a = cuesFor(x, "after"); return a.length ? a[a.length-1].t : x.e; }
+// the schedule is the schedule — cues no longer move an entry's own times
+const startOf = x => x.s;
+const endOf   = x => x.e || x.s;
 const spanFrom = s => { const a = startOf(s), b = s.s; return (a && b && a < b) ? a : b; };
 const spanTo   = s => { const a = endOf(s),   b = s.e; return (a && b && a > b) ? a : b; };
 const encloses = (span, t) => {
@@ -648,7 +746,8 @@ const encloses = (span, t) => {
 // all-aboard: explicit if set, otherwise half an hour before the ship sails
 function aboardBy(port){
   if(port.l.aboard) return parse(port.l.aboard);
-  return port.e ? new Date(port.e.getTime() - 30*60000) : null;
+  const m = +opt("misc", "aboardBefore", 30);
+  return (port.e && m > 0) ? new Date(port.e.getTime() - m*60000) : null;
 }
 
 function sorted(){
@@ -660,6 +759,7 @@ function sorted(){
 let dodged = null;   // an entry you've backed out of, so we stop dragging you back in
 
 function autoDrop(){
+  if(SET().autoDrop === false) return false;
   const now = new Date();
   let found = null;
   store.trips.forEach(t => {
@@ -753,7 +853,7 @@ function render(){
   items.sort((a,b) => (!a.t && !b.t) ? 0 : !a.t ? 1 : !b.t ? -1 : a.t - b.t);
 
   /* ---- draw ---- */
-  let curDay = null, rail = null, prevEnd = null, prevTo = "", prevItem = null;
+  let curDay = null, rail = null, prevEnd = null, prevTo = "", prevItem = null, prevLeg = null;
   items.forEach(it => {
     const day = it.t ? dayKey(it.t) : "tbc";
 
@@ -787,35 +887,43 @@ function render(){
     if(it.type === "board" || it.type === "disembark"){
       rail = null;                       // board/disembark cap the rail, they don't sit in it
       if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
-        const row = judge(it.x, it.t, prevEnd, prevTo, all);
+        const row = judge(it.x, it.t, prevEnd, prevTo, all, prevLeg);
         if(row) list.appendChild(row);
       }
       if(it.type === "board"){ const c = beforeCue(it.x); if(c) list.appendChild(c); }
       list.appendChild(anchor(it, now));
       if(it.type === "disembark"){
         const c = afterCue(it.x); if(c) list.appendChild(c);
-        prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || "";
+        prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || ""; prevLeg = it.x;
       }
     } else if(it.x.l.kind === "port"){
       const pb = beforeCue(it.x); if(pb) box().appendChild(pb);
       box().appendChild(portRow(it.x, now));
+      prevEnd = endOf(it.x) || prevEnd; prevTo = it.x.l.place || prevTo; prevLeg = it.x;
       const pa = afterCue(it.x); if(pa) box().appendChild(pa);
     } else {
       // connection warnings between consecutive journeys on the same day
-      if(it.x.l.kind === "move" && !it.span){
-        if(prevEnd && it.t && dayKey(prevEnd) === day){
-          const row = judge(it.x, it.t, prevEnd, prevTo, all);
+      // only worth checking when the next thing has a start you have to hit:
+      // a journey, or anything you've hung a buffer or deadline on
+      const worthChecking = it.x.l.kind === "move" || cuesFor(it.x, "before").length > 0;
+      if(worthChecking && !it.span && prevEnd && it.t && dayKey(prevEnd) === day){
+        const g = mins(it.t - prevEnd);
+        const bothMoves = prevLeg && prevLeg.l.kind === "move" && it.x.l.kind === "move";
+        if(g !== 0 || bothMoves){          // a zero gap in a hand-built plan is a slicing convention
+          const row = judge(it.x, it.t, prevEnd, prevTo, all, prevLeg);
           if(row) list.appendChild(row);
         }
-        prevEnd = endOf(it.x); prevTo = it.x.l.to || "";
       }
       const before = beforeCue(it.x);
       if(before){ if(it.port) before.classList.add("nested"); box().appendChild(before); }
+      prevEnd = endOf(it.x) || prevEnd; prevTo = it.x.l.to || it.x.l.place || prevTo; prevLeg = it.x;
       const el = card(it.x, now);
       if(it.port) el.classList.add("nested");
       box().appendChild(el);
       const after = afterCue(it.x);
       if(after){ if(it.port) after.classList.add("nested"); box().appendChild(after); }
+      const fb = fallbackRow(it.x.l);
+      if(fb){ if(it.port) fb.classList.add("nested"); box().appendChild(fb); }
       // back-aboard check for anything ashore during a port call
       if(it.port){
         const by = aboardBy(it.port), ends = it.x.e || it.x.s;
@@ -847,89 +955,267 @@ function cueRow(text, where){
 }
 
 // a cue belongs above the card if it lands at or before departure, below it otherwise
-function cuesFor(x, side){
+/* Three kinds of thing hang off an entry:
+     deadline   — a moment when something is withdrawn (may be UNKNOWN if you haven't looked it up)
+     connection — a duration you must spend, anchored to the entry's start or end
+     slack      — a target you've chosen; the line past which you stop being able to reason
+*/
+function cueList(x){
   const s = x.s, e = x.e || x.s;
-  // above the card if it lands at or before the start, below if at or after the end;
-  // a deadline inside the window (common on a port day) goes to whichever end it's nearer
-  const where = t => !s ? "before"
-                   : t <= s ? "before"
-                   : (e && t >= e) ? "after"
-                   : (e && (t - s) >= (e - t)) ? "after" : "before";
-  return (x.l.cues || []).map(c => ({c:c, t:parse(c.at)})).filter(z => z.t)
-    .filter(z => where(z.t) === side)
-    .sort((a,b) => a.t - b.t);
+  return (x.l.cues || []).map(c => {
+    const kind = c.kind || "slack";
+    if(kind === "connection"){
+      const m = +c.mins || 0;
+      const side = c.side === "after" ? "after" : "before";
+      const anchor = side === "before" ? s : e;
+      return {c:c, kind:kind, side:side, mins:m,
+              t: anchor ? new Date(anchor.getTime() + (side === "before" ? -m : m)*60000) : null};
+    }
+    const t = parse(c.at);
+    const side = !t ? (c.side === "after" ? "after" : "before")
+               : (s && t <= s) ? "before"
+               : (e && t >= e) ? "after"
+               : (e && (t - s) >= (e - t)) ? "after" : "before";
+    return {c:c, kind:kind, side:side, t:t};
+  });
 }
+const cuesFor = (x, side) => cueList(x).filter(z => z.side === side && (z.t || z.kind === "connection"))
+  .sort((a,b) => (a.t && b.t) ? a.t - b.t : a.t ? -1 : b.t ? 1 : 0);
+
+// minutes of connection sitting in the space between two entries
+const connMins = (prev, next) =>
+  (prev ? cuesFor(prev, "after").filter(z => z.kind === "connection").reduce((n,z) => n+z.mins, 0) : 0) +
+  (next ? cuesFor(next, "before").filter(z => z.kind === "connection").reduce((n,z) => n+z.mins, 0) : 0);
+
+// your planning line in front of an entry, if you've set one
+const targetFor = x => cuesFor(x, "before").filter(z => z.kind === "slack" && z.t)[0] || null;
 
 function cueBand(x, side){
   const list = cuesFor(x, side);
   if(!list.length) return null;
   const d = document.createElement("div");
-  d.className = "cue " + side + (list.some(z => z.c.hard) ? " hashard" : "");
-  d.innerHTML = "⏱ " + list.map(z =>
-    '<span class="' + (z.c.hard ? "hard" : "soft") + '">' +
-    (z.c.label ? esc(z.c.label) + " " : "") + hhmm(z.t) + '</span>').join(" · ");
+  d.className = "cue " + side + (list.some(z => z.kind === "deadline") ? " hashard" : "");
+  d.innerHTML = "⏱ " + list.map(z => {
+    const label = z.c.label ? esc(z.c.label) : "";
+    if(z.kind === "connection") return '<span class="conn">'+(label || "connection")+' '+dur(z.mins)+'</span>';
+    return '<span class="'+(z.kind === "deadline" ? "hard" : "soft")+'">'+(label ? label+" " : "")+hhmm(z.t)+'</span>';
+  }).join(" · ");
   return d;
 }
 const beforeCue = x => cueBand(x, "before");
 const afterCue  = x => cueBand(x, "after");
 
-/* Something is UNFORGIVING if missing it can't be undone — a flight, a cruise, a ferry,
-   or anything you've marked with a Deadline. Trains and buses run again. */
+/* UNFORGIVING = missing it can't be undone. Trains and buses run again. */
 const UNFORGIVING = {Flight:1, Cruise:1, Ferry:1};
-// fixed is about the START: whether the thing leaves without you.
-// An arrival time is a forecast, not a commitment, so it never makes anything fixed.
 function unforgiving(x){
+  if(cueList(x).some(z => z.kind === "deadline")) return true;
   if(x.l.fixed === true || x.l.fixed === false) return x.l.fixed;
-  return !!UNFORGIVING[x.l.mode] || (x.l.cues || []).some(c => c.hard && c.at);
+  return !!opt("hard", x.l.mode, !!UNFORGIVING[x.l.mode]);
 }
 
-// the next thing down the chain that you genuinely can't miss
-function nextHard(x, all){
-  const from = startOf(x) || x.s;
-  if(!from) return null;
+// how late a thing might plausibly run, by what you're arriving on
+const SLIP = {Walk:0, "Tube / Metro":5, Train:10, Bus:15, Coach:15, Taxi:15, Car:15,
+              Ferry:15, Transfer:15, Flight:25, Cruise:30};
+const slipFor = l => +opt("slip", l && l.mode, (l && SLIP[l.mode] != null) ? SLIP[l.mode] : 10);
+
+// idle time lying between this entry and something later — the cushion a delay would eat
+function cushionBetween(x, y, all){
+  let total = 0, prev = null, counting = false;
+  for(const z of all){
+    if(z.l.id === x.l.id){ counting = true; prev = z; continue; }
+    if(!counting || !z.s) continue;
+    if(prev && prev.e) total += Math.max(0, mins(z.s - prev.e) - connMins(prev, z));
+    if(z.l.id === y.l.id) break;
+    prev = z;
+  }
+  return total;
+}
+
+// the next thing you genuinely can't miss — and any you've flagged but not looked up
+function lookAhead(x, all){
+  const from = x.s;
+  let hard = null;
+  if(!from) return {hard:null};
   for(const y of all){
-    const t = startOf(y) || y.s;
-    if(!t || t <= from || y.l.id === x.l.id) continue;
-    if(unforgiving(y)) return {y:y, t:t, lead:mins(t - from)};
+    const t = y.s;
+    if(y.l.id === x.l.id) continue;
+    if(!t || t <= from) continue;
+    if(!hard && unforgiving(y)) hard = {y:y, t:t, lead:mins(t - from)};
   }
-  return null;
+  return {hard:hard};
 }
 
-/* Deadlines are theirs; buffers are yours. Miss either and it's a clash.
-   Thin slack only matters against a deadline — or when losing it would cascade
-   into something unforgiving later the same day. */
-function judge(x, at, prevEnd, prevTo, all){
-  const g = mins(at - prevEnd);
-  const first = cuesFor(x, "before")[0] || null;
+/* slack = gap − connection. Connection is spent; slack absorbs lateness.
+   A target is your planning line: crossing it is a loss of confidence, not a failure. */
+function judge(x, at, prevEnd, prevTo, all, prevLeg){
+  const gap = mins(at - prevEnd);
+  const conn = connMins(prevLeg || null, x);
+  const slack = gap - conn;
 
-  if(g < 0){
-    return gapRow("clash", first
-      ? "⚠ You'd miss “" + (first.c.label || "your own time") + "” by " + dur(-g)
-      : "⚠ Overlaps the previous journey by " + dur(-g));
+  if(gap < 0) return gapRow("clash", "⚠ Overlaps the previous item by " + dur(-gap));
+  if(slack < 0) return gapRow("clash", "⚠ " + dur(-slack) + " short");
+  if(gap >= +opt("misc", "maxGap", 360)) return null;
+
+  const target = targetFor(x);
+  if(target){
+    const eta = new Date(prevEnd.getTime() + conn*60000);
+    if(eta > target.t) return gapRow("tight", "⚠ ETA " + dur(mins(eta - target.t)) + " later than target");
+    return gapRow("ok", dur(slack) + " spare");
   }
-  if(g >= 360) return null;
 
-  if(first && !first.c.hard){
-    return gapRow("ok", dur(g) + " spare — on plan");     // your time, and you make it
-  }
-
-  const limit = tightFor(x.l);
-  if(g < limit){
-    if(unforgiving(x)){
-      return gapRow("tight", "⚠ " + dur(g) + " spare — tight for a " +
-        (x.l.mode || "connection").toLowerCase() + ", allow " + dur(limit));
+  const need = tightFor(x.l) + slipFor(prevLeg && prevLeg.l);
+  if(slack < need){
+    if(unforgiving(x)) return gapRow("tight", "⚠ " + dur(slack) + " spare");
+    const ahead = lookAhead(x, all || []);
+    const own = fallbackOf(x.l);
+    const board = own && x.s ? nextDeparture(new Date(x.s.getTime() + 1), own) : null;
+    const lost = board ? mins(board - x.s) : null;
+    const cushion = ahead.hard ? cushionBetween(x, ahead.hard.y, all || []) : 0;
+    if(ahead.hard && lost != null && cushion < lost){
+      const what = ahead.hard.y.l.kind === "move"
+        ? (ahead.hard.y.l.mode || "journey").toLowerCase() + (ahead.hard.y.l.to ? " to " + ahead.hard.y.l.to : "")
+        : titleOf(ahead.hard.y);
+      return gapRow("tight", "⚠ " + dur(slack) + " spare — " + what + " " + hhmm(ahead.hard.t) + " follows");
     }
-    const nx = nextHard(x, all || []);
-    if(nx && nx.lead <= 720){
-      const what = nx.y.l.kind === "move"
-        ? (nx.y.l.mode || "journey").toLowerCase() + (nx.y.l.to ? " to " + nx.y.l.to : "")
-        : titleOf(nx.y);
-      return gapRow("tight", "⚠ " + dur(g) + " spare — tight, and the " + what +
-        " at " + hhmm(nx.t) + " is only " + dur(nx.lead) + " behind it");
-    }
-    return gapRow("soft", dur(g) + " — tight, but nothing fixed follows it");
+    return gapRow("soft", dur(slack) + " spare");
   }
-  return gapRow("", dur(g) + (first ? " spare" : " in " + (prevTo || "between")));
+  return gapRow("ok", dur(slack) + " spare");
+}
+
+/* If you're N minutes late here, where does it land?
+   Walk forward: each idle stretch absorbs some of it; a flexible thing you miss costs
+   you the wait for the next one; an unforgiving thing you miss is where it stops. */
+function ripple(x, minutes, all){
+  const out = [];
+  let free = new Date((endOf(x) || x.s).getTime() + minutes*60000);
+  let prev = x, spent = minutes;
+
+  for(const y of all){
+    if(!y.s || y.s <= (x.s || 0) || y.l.id === x.l.id) continue;
+    const conn = connMins(prev, y);
+    const required = new Date(free.getTime() + conn*60000);
+    if(required <= y.s){
+      out.push({y:y, state:"clear", by:mins(y.s - required)});
+      return {steps:out, verdict:"absorbed", at:y, spare:mins(y.s - required)};
+    }
+    const late = mins(required - y.s);
+
+    const missedDeadline = cueList(y).filter(z => z.kind === "deadline" && z.t && z.t < required)[0];
+    if(missedDeadline){
+      out.push({y:y, state:"broken", late:late, why:missedDeadline.c.label || "a deadline"});
+      return {steps:out, verdict:"broken", at:y};
+    }
+    if(y.l.kind === "move" && unforgiving(y)){
+      out.push({y:y, state:"broken", late:late});
+      return {steps:out, verdict:"broken", at:y};
+    }
+    if(y.l.kind === "move"){
+      const fb = fallbackOf(y.l);
+      const nd = nextDeparture(required, fb);
+      if(!nd || (fb.last && nd.t > fb.last)){
+        out.push({y:y, state:"broken", late:late,
+                  why: nd && fb.last ? "nothing after the last at " + hhmm(fb.last) : ""});
+        return {steps:out, verdict:"broken", at:y};
+      }
+      out.push({y:y, state:"missed", late:late, board:nd.t, est:nd.est,
+                lastAt: fb.last ? fb.last : null});
+      const run = y.e ? mins(y.e - y.s) : 0;
+      free = new Date(nd.t.getTime() + run*60000);
+      spent = mins(nd.t - y.s);
+    } else {
+      const run = y.e ? mins(y.e - y.s) : 0;
+      out.push({y:y, state:"shifted", late:late});
+      free = new Date(required.getTime() + run*60000);
+      spent = late;
+    }
+    prev = y;
+    if(out.length > 12) break;
+  }
+  return {steps:out, verdict:"ran out", spare:spent};
+}
+
+function renderRipple(){
+  const box = $("#rippleBody");
+  const x = sorted().find(z => z.l.id === lateId);
+  if(!x){ box.textContent = ""; return; }
+  const r = ripple(x, lateMins, sorted());
+  let h = '<div class="rhead">Running ' + dur(lateMins) + ' late from ' + esc(titleOf(x)) + '</div>';
+  h += r.steps.map(s => {
+    const name = esc(titleOf(s.y)) + ' ' + hhmm(s.y.s);
+    if(s.state === "clear")   return '<div class="rstep ok">✓ ' + name + ' — still fine, ' + dur(s.by) + ' to spare</div>';
+    if(s.state === "shifted") return '<div class="rstep">· ' + name + ' — starts ' + dur(s.late) + ' late</div>';
+    if(s.state === "missed"){
+      return '<div class="rstep warn">⚠ ' + name + ' — missed by ' + dur(s.late) +
+        ", you'd be on the " + hhmm(s.board) + (s.est ? " (est)" : "") +
+        (s.lastAt ? (Math.abs(s.board - s.lastAt) < 60000 ? ", the last one"
+                                                          : ' · last ' + hhmm(s.lastAt)) : '') + '</div>';
+    }
+    return '<div class="rstep bad">✗ ' + name + ' — missed by ' + dur(s.late) +
+      (s.why ? ' (' + esc(s.why) + ')' : '') + '</div>';
+  }).join("");
+  h += '<div class="rverdict">' + (
+    r.verdict === "absorbed" ? "Absorbed. Nothing after this is affected." :
+    r.verdict === "broken"   ? "Stops at " + esc(titleOf(r.at)) + "." :
+    "Still " + dur(r.spare) + " behind at the end of what's planned.") + '</div>';
+  box.innerHTML = h;
+}
+
+let lateId = null, lateMins = 30;
+function openRipple(id){
+  lateId = id;
+  const steps = String(opt("misc", "rippleSteps", "15,30,45,60,120")).split(/[ ,]+/)
+    .map(n => parseInt(n, 10)).filter(n => n > 0);
+  const row = $("#lateRow"); row.innerHTML = "";
+  steps.forEach(m => {
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.late = m; b.textContent = dur(m);
+    b.addEventListener("click", () => {
+      lateMins = m;
+      row.querySelectorAll("button").forEach(z => z.classList.toggle("on", z === b));
+      renderRipple();
+    });
+    row.appendChild(b);
+  });
+  if(steps.indexOf(lateMins) < 0) lateMins = steps[0] || 30;
+  row.querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.late === lateMins));
+  renderRipple();
+  show("#ripple");
+}
+
+// the later version of the same journey — not part of the plan, but it's what you'd fall back on
+function fallbackOf(l){
+  const f = l && l.fallback;
+  if(!f || (!f.next && !f.every && !f.last)) return null;
+  return {next: parse(f.next), every: f.every || null, last: parse(f.last)};
+}
+
+function fallbackRow(l){
+  const f = fallbackOf(l);
+  if(!f) return null;
+  const bits = [];
+  if(f.next) bits.push("next " + hhmm(f.next));
+  if(f.every) bits.push((f.next ? "then " : "every ") + "~" + dur(f.every));
+  if(f.last) bits.push("last " + hhmm(f.last));
+  if(!bits.length) return null;
+  const d = document.createElement("div");
+  d.className = "fallback";
+  d.textContent = "↳ " + bits.join(", ");
+  return d;
+}
+
+// the first departure at or after you can actually get there — only from what you've recorded
+function nextDeparture(required, fb){
+  if(!fb) return null;
+  if(fb.next){
+    let t = new Date(fb.next.getTime()), stepped = false, guard = 0;
+    if(t >= required) return {t:t, est:false};
+    if(!fb.every) return null;
+    while(t < required && guard++ < 500){ t = new Date(t.getTime() + fb.every*60000); stepped = true; }
+    if(fb.last && Math.abs(t - fb.last) < 60000) return {t:fb.last, est:false};
+    return {t:t, est:stepped};
+  }
+  if(fb.every) return {t:new Date(required.getTime() + fb.every*60000), est:true};
+  return null;
 }
 
 function gapRow(cls, text){
@@ -998,9 +1284,11 @@ function anchor(it, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
+  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button>'+
+       '<button data-late="'+l.id+'">Late?</button></div></div>';
   el.innerHTML = h;
   el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  el.querySelector("[data-late]").addEventListener("click", () => openRipple(l.id));
   wirePlans(el, l);
   return el;
 }
@@ -1119,9 +1407,11 @@ function card(x, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
+  h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button>'+
+       '<button data-late="'+l.id+'">Late?</button></div></div>';
   el.innerHTML = h;
   el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  el.querySelector("[data-late]").addEventListener("click", () => openRipple(l.id));
   wirePlans(el, l);
   return el;
 }
@@ -1165,6 +1455,7 @@ function setKind(k){
   $("#lblStart").textContent = k === "move" ? "Departs" : k === "port" ? "Ship arrives" : "Starts / check in";
   $("#lblEnd").textContent   = k === "move" ? "Arrives" : k === "port" ? "Ship sails"   : "Ends / check out";
   $("#rowBoard").hidden = false;
+  $("#rowFallback").hidden = k !== "move";
   buildPresets(k);
   const types = k === "move" ? MOVE_TYPES : k === "port" ? PORT_TYPES : STOP_TYPES;
   const cur = $("#f_mode").value;
@@ -1172,31 +1463,58 @@ function setKind(k){
   if(types.indexOf(cur) > -1) $("#f_mode").value = cur;
 }
 
+const CUE_STATES = [
+  {k:"deadline",   side:"before", txt:"Deadline"},
+  {k:"connection", side:"before", txt:"Conn before"},
+  {k:"connection", side:"after",  txt:"Conn after"},
+  {k:"slack",      side:"before", txt:"Slack"}
+];
+const stateIndex = c => {
+  const k = c.kind || "slack", s = c.side === "after" ? "after" : "before";
+  const i = CUE_STATES.findIndex(z => z.k === k && (k !== "connection" || z.side === s));
+  return i < 0 ? 3 : i;
+};
+
 function cueRowEditor(c){
   c = c || {};
   const r = document.createElement("div");
   r.className = "cuerow";
   r.innerHTML = '<input class="cl" placeholder="What has to happen" value="'+esc(c.label||"")+'" autocomplete="off">'+
+                '<button type="button" class="ck"></button>'+
                 '<input class="ct" type="datetime-local" value="'+esc(c.at||"")+'">'+
-                '<button type="button" class="ck'+(c.hard?" hard":"")+'">'+(c.hard?"Deadline":"Buffer")+'</button>'+
+                '<input class="cm" type="number" min="1" step="1" inputmode="numeric" placeholder="min" value="'+
+                  (c.mins != null ? esc(String(c.mins)) : "")+'" hidden>'+
                 '<button type="button" class="cx" aria-label="Remove">×</button>';
-  const kind = r.querySelector(".ck");
-  kind.addEventListener("click", () => {
-    const on = !kind.classList.contains("hard");
-    kind.classList.toggle("hard", on);
-    kind.textContent = on ? "Deadline" : "Buffer";
-  });
+  let i = stateIndex(c);
+  const btn = r.querySelector(".ck"), t = r.querySelector(".ct"), m = r.querySelector(".cm");
+  function paint(){
+    const st = CUE_STATES[i];
+    btn.textContent = st.txt;
+    btn.className = "ck " + st.k;
+    r.dataset.kind = st.k; r.dataset.side = st.side;
+    const isConn = st.k === "connection";
+    t.hidden = isConn; m.hidden = !isConn;
+    if(isConn && !m.value) m.value = "10";
+    t.placeholder = st.k === "deadline" ? "leave blank if not looked up" : "";
+  }
+  btn.addEventListener("click", () => { i = (i + 1) % CUE_STATES.length; paint(); });
   r.querySelector(".cx").addEventListener("click", () => r.remove());
+  paint();
   $("#cueRows").appendChild(r);
   return r;
 }
 
 function readCues(){
-  return [...document.querySelectorAll("#cueRows .cuerow")].map(r => ({
-    label: r.querySelector(".cl").value.trim(),
-    at:    r.querySelector(".ct").value,
-    hard:  r.querySelector(".ck").classList.contains("hard")
-  })).filter(c => c.at).sort((a,b) => a.at.localeCompare(b.at));
+  return [...document.querySelectorAll("#cueRows .cuerow")].map(r => {
+    const kind = r.dataset.kind, side = r.dataset.side;
+    const label = r.querySelector(".cl").value.trim();
+    if(kind === "connection"){
+      const mins = Math.max(1, parseInt(r.querySelector(".cm").value, 10) || 0);
+      return {label:label, kind:kind, side:side, mins:mins};
+    }
+    return {label:label, kind:kind, side:side, at:r.querySelector(".ct").value};
+  }).filter(c => c.kind === "connection" ? c.mins > 0 : !!c.at)
+    .sort((a,b) => (a.at||"").localeCompare(b.at||""));
 }
 
 let missMode = "soft";
@@ -1235,7 +1553,11 @@ function openSheet(id){
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
   $("#f_aboard").value = l ? (l.aboard || "") : "";
-  setMiss(l ? (l.fixed ? "hard" : "soft") : (SEED_FIXED[$("#f_mode").value] ? "hard" : "soft"));
+  $("#f_next").value  = l && l.fallback ? (l.fallback.next || "") : "";
+  $("#f_every").value = l && l.fallback && l.fallback.every ? l.fallback.every : "";
+  $("#f_last").value  = l && l.fallback ? (l.fallback.last || "") : "";
+  setMiss(l ? (l.fixed ? "hard" : "soft")
+            : (opt("hard", $("#f_mode").value, !!SEED_FIXED[$("#f_mode").value]) ? "hard" : "soft"));
   setStatus(l);
   $("#cueRows").innerHTML = "";
   ((l && l.cues) || []).forEach(c => cueRowEditor(c));
@@ -1278,10 +1600,11 @@ function suggestEnd(){
   const mode = $("#f_mode").value;
   let t;
   if(mode === "Hotel" || mode === "Apartment"){
-    t = new Date(s); t.setDate(t.getDate() + 1); t.setHours(10, 0, 0, 0);
+    const hm = /^(\d{1,2}):(\d{2})$/.exec(String(opt("misc", "checkout", "10:00"))) || [0,10,0];
+    t = new Date(s); t.setDate(t.getDate() + 1); t.setHours(+hm[1], +hm[2], 0, 0);
     if(t <= s) t = new Date(s.getTime() + 60*60000);
   } else {
-    t = new Date(s.getTime() + (TYPICAL[mode] || 60)*60000);
+    t = new Date(s.getTime() + (+opt("typical", mode, TYPICAL[mode] || 60))*60000);
   }
   e.value = stamp(t);
   syncEnd(true);
@@ -1310,6 +1633,9 @@ function collect(){
     ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
     aboard: kind === "port" ? $("#f_aboard").value : "",
     cues: readCues(),
+    fallback: kind === "move" ? {next: $("#f_next").value || "",
+                                 every: parseInt($("#f_every").value, 10) || null,
+                                 last: $("#f_last").value || ""} : null,
     fixed: missMode === "hard",
     booked: readStatus("booked"), paid: readStatus("paid"), checkedIn: readStatus("checkedIn")
   };
@@ -1401,13 +1727,11 @@ $("#fab").addEventListener("click", () => openSheet(null));
 $("#scrim").addEventListener("click", hideAll);
 $("#cancelBtn").addEventListener("click", hideAll);
 $("#verLine").textContent = "Itinerary · version " + APP_VERSION;
-$("#menuBtn").addEventListener("click", () => {
-  const r = store.rate;
-  $("#rateNow").textContent = "€1 = " + r.EUR + " · $1 = " + r.USD + " · CHF 1 = " + r.CHF;
-  show("#menu");
-});
+$("#menuBtn").addEventListener("click", () => show("#menu"));
 $("#menuClose").addEventListener("click", hideAll);
 $("#tripsClose").addEventListener("click", hideAll);
+$("#rippleClose").addEventListener("click", hideAll);
+
 $("#plansBtn").addEventListener("click", () => {
   if(!editing) return;
   planHost = editing;
@@ -1445,7 +1769,9 @@ document.querySelectorAll("#missSeg button").forEach(b =>
 document.querySelectorAll("#statusRow button").forEach(b =>
   b.addEventListener("click", () => b.classList.toggle("on")));
 // picking a type re-seeds the start-time answer, until you've touched it yourself
-$("#f_mode").addEventListener("change", () => { if(!editing) setMiss(SEED_FIXED[$("#f_mode").value] ? "hard" : "soft"); });
+$("#f_mode").addEventListener("change", () => {
+  if(!editing) setMiss(opt("hard", $("#f_mode").value, !!SEED_FIXED[$("#f_mode").value]) ? "hard" : "soft");
+});
 
 // opening an empty arrival picker starts it just after the departure
 ["focus","click"].forEach(ev => $("#f_end").addEventListener(ev, suggestEnd));
@@ -1461,29 +1787,32 @@ $("#f_mode").addEventListener("change", suggestEnd);
 
 const CUE_PRESETS = {
   move: [
-    {key:"there", label:"+ Be there",        mins:-150, from:"start", hard:false, text:l => "Be at " + (l || "the terminal")},
-    {key:"bag",   label:"+ Bag drop",        mins:-60,  from:"start", hard:true,  text:() => "Bag drop closes"},
-    {key:"gate",  label:"+ Gate / all aboard", mins:-30, from:"start", hard:true,
-                  text:(l, m) => (m === "Cruise" || m === "Ferry") ? "All aboard" : "Gate closes"},
-    {key:"off",   label:"+ Off and clear",   mins:40,   from:"end",   hard:false,
-                  text:(l, m) => (m === "Cruise" || m === "Ferry") ? "Off the ship" : "Off and clear"},
+    {key:"there",  label:"+ Be there",      kind:"slack",      mins:-150, from:"start", text:l => "Be at " + (l || "the terminal")},
+    {key:"walk",   label:"+ Walk to it",    kind:"connection", side:"before", dur:10,   text:() => "Walk to it"},
+    {key:"bag",    label:"+ Bag drop",      kind:"deadline",   mins:-60,  from:"start", text:() => "Bag drop closes"},
+    {key:"gate",   label:"+ Gate / aboard", kind:"deadline",   mins:-30,  from:"start",
+                   text:(l, m) => (m === "Cruise" || m === "Ferry") ? "All aboard" : "Gate closes"},
+    {key:"off",    label:"+ Off and clear", kind:"connection", side:"after", dur:40,
+                   text:(l, m) => (m === "Cruise" || m === "Ferry") ? "Off the ship" : "Off and clear"},
   ],
   stop: [
-    {key:"leave", label:"+ Leave by",        mins:-30,  from:"start", hard:false, text:() => "Leave for this by"},
-    {key:"arrive",label:"+ Be there",        mins:-10,  from:"start", hard:false, text:() => "Be there by"},
-    {key:"out",   label:"+ Out by",          mins:0,    from:"end",   hard:false, text:() => "Out by"},
+    {key:"leave",  label:"+ Leave by",      kind:"slack",      mins:-30, from:"start", text:() => "Leave for this by"},
+    {key:"getto",  label:"+ Getting there", kind:"connection", side:"before", dur:15,  text:() => "Getting there"},
+    {key:"out",    label:"+ Out by",        kind:"slack",      mins:0,   from:"end",   text:() => "Out by"},
+    {key:"after",  label:"+ Leaving after", kind:"connection", side:"after", dur:10,   text:() => "Leaving"},
   ],
   port: [
-    {key:"ashore",label:"+ Ashore by",       mins:30,   from:"start", hard:false, text:() => "Ashore by"},
-    {key:"back",  label:"+ Back at the gangway", mins:-45, from:"end", hard:false, text:() => "Back at the gangway"},
-    {key:"shuttle",label:"+ Last shuttle",   mins:-60,  from:"end",   hard:true,  text:() => "Last port shuttle"},
+    {key:"ashore", label:"+ Ashore by",     kind:"slack",      mins:30,  from:"start", text:() => "Ashore by"},
+    {key:"back",   label:"+ Back at gangway", kind:"slack",    mins:-45, from:"end",   text:() => "Back at the gangway"},
+    {key:"shuttle",label:"+ Last shuttle",  kind:"deadline",   mins:-60, from:"end",   text:() => "Last port shuttle"},
+    {key:"tender", label:"+ Tender queue",  kind:"connection", side:"after", dur:30,   text:() => "Tender queue"},
   ]
 };
 
 function buildPresets(k){
   const box = $("#cuePresets");
   box.innerHTML = "";
-  (CUE_PRESETS[k] || []).concat([{key:"blank", label:"+ Custom", mins:0, from:"start", hard:false, text:() => ""}])
+  (CUE_PRESETS[k] || []).concat([{key:"blank", label:"+ Custom", kind:"slack", mins:0, from:"start", text:() => ""}])
     .forEach(pre => {
       const b = document.createElement("button");
       b.type = "button"; b.textContent = pre.label;
@@ -1493,13 +1822,22 @@ function buildPresets(k){
 }
 
 function addPreset(pre){
+  if(pre.kind === "connection"){
+    const mins = +opt("preset", pre.key, pre.dur || 10);
+    const r = cueRowEditor({label:pre.text($("#f_from").value.trim(), $("#f_mode").value),
+                            kind:"connection", side:pre.side || "before", mins:mins});
+    r.querySelector(".cm").focus();
+    return;
+  }
   let at = "";
   if(pre.key !== "blank"){
     const base = parse(pre.from === "end" ? $("#f_end").value : $("#f_start").value);
     if(!base){ toast(pre.from === "end" ? "Set the end time first" : "Set the start time first"); return; }
-    at = stamp(new Date(base.getTime() + pre.mins*60000));
+    const off = +opt("preset", pre.key, Math.abs(pre.mins));
+    at = stamp(new Date(base.getTime() + (pre.mins < 0 ? -off : off)*60000));
   }
-  const r = cueRowEditor({label: pre.text($("#f_from").value.trim(), $("#f_mode").value), at: at, hard: !!pre.hard});
+  const r = cueRowEditor({label: pre.text($("#f_from").value.trim(), $("#f_mode").value),
+                          kind: pre.kind || "slack", at: at});
   r.querySelector(pre.key === "blank" ? ".cl" : ".ct").focus();
 }
 
@@ -1545,63 +1883,179 @@ document.querySelectorAll(".quick button[data-add]").forEach(b => {
 });
 
 
-$("#mRate").addEventListener("click", () => {
-  const e = prompt("How many pounds is €1?", store.rate.EUR);
-  if(e !== null && !isNaN(parseFloat(e))) store.rate.EUR = parseFloat(e);
-  const u = prompt("How many pounds is $1?", store.rate.USD);
-  if(u !== null && !isNaN(parseFloat(u))) store.rate.USD = parseFloat(u);
-  const f = prompt("How many pounds is CHF 1?", store.rate.CHF);
-  if(f !== null && !isNaN(parseFloat(f))) store.rate.CHF = parseFloat(f);
-  save(); render(); hideAll(); toast("Rates saved");
-});
-
-// gather an itinerary and everything nested inside it
-function subtree(id, out){
-  out = out || [];
-  const t = byId(id); if(!t) return out;
-  out.push(t);
-  t.legs.forEach(l => kids(l.id).forEach(k => subtree(k.id, out)));
-  return out;
+/* Durations are stored in minutes but typed however suits: 90, 2h, 1.5h, 7d. */
+function parseDur(s){
+  const m = /^(\d+(?:\.\d+)?)\s*(d|day|days|h|hr|hrs|hour|hours|m|min|mins)?$/i.exec(String(s).trim());
+  if(!m) return null;
+  const n = parseFloat(m[1]), u = (m[2] || "m").toLowerCase()[0];
+  return Math.round(n * (u === "d" ? 1440 : u === "h" ? 60 : 1));
+}
+function showDur(m){
+  m = +m;
+  if(m >= 1440) return (m % 1440 === 0 ? m/1440 : +(m/1440).toFixed(1)) + "d";
+  if(m >= 60)   return (m % 60 === 0 ? m/60 : +(m/60).toFixed(1)) + "h";
+  return String(m);
 }
 
-function download(obj, name){
-  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-}
-
-const slug = s => (s || "itinerary").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "itinerary";
-
-$("#mShare").addEventListener("click", () => {
-  const root = chain(trip())[0];                 // share the whole trip, not the plan you're standing in
-  download({format:"itinerary-share", v:1, rate:store.rate, itineraries:subtree(root.id)},
-           slug(root.name) + ".json");
-  hideAll(); toast("Exported " + root.name);
-});
-
-// bring in a shared itinerary alongside what's already here, with fresh ids
-function absorb(list){
-  const map = {};
-  const copies = list.map(t => {
-    const c = {id:uid(), name:t.name, parent:t.parent || null, active:t.active !== false,
-               legs:(t.legs||[]).map(l => { const n = Object.assign({}, l, {id:uid()}); map[l.id] = n.id; return n; })};
-    map[t.id] = c.id;
-    return c;
+/* Everything the app would otherwise assume, in one place, showing its default. */
+function setField(group, key, dflt, opts){
+  opts = opts || {};
+  const wrap = document.createElement("div");
+  wrap.className = "setrow";
+  const stored = SET()[group] && SET()[group][key] != null ? SET()[group][key] : null;
+  const cur = stored == null ? "" : (opts.dur ? showDur(stored) : stored);
+  wrap.innerHTML = '<span class="sname">'+esc(opts.name || key)+'</span>'+
+    '<input type="'+(opts.text || opts.dur ? "text" : "number")+'" '+
+      (opts.text || opts.dur ? '' : 'min="0" step="'+(opts.step||1)+'" inputmode="numeric" ')+
+    'value="'+esc(String(cur))+'" placeholder="'+esc(opts.dur ? showDur(dflt) : String(dflt))+'">'+
+    (opts.unit ? '<span class="sunit">'+esc(opts.unit)+'</span>' : '');
+  const inp = wrap.querySelector("input");
+  inp.addEventListener("change", () => {
+    const g = SET()[group] || (SET()[group] = {});
+    const raw = inp.value.trim();
+    if(raw === "") delete g[key];
+    else if(opts.dur){
+      const v = parseDur(raw);
+      if(v == null || v < 0){
+        const live = SET()[group] && SET()[group][key] != null ? SET()[group][key] : null;
+        inp.value = live == null ? "" : showDur(live);
+        toast("Try 90, 2h or 7d"); return;
+      }
+      g[key] = v; inp.value = showDur(v);
+    }
+    else g[key] = opts.text ? raw : (opts.step ? parseFloat(raw) : parseInt(raw, 10));
+    save(); render();
   });
-  // a parent inside the file is remapped; a parent that already exists here is left alone,
-  // which is what lets a file of plans attach to entries you've already got
-  copies.forEach(c => {
-    if(!c.parent) return;
-    if(map[c.parent]) c.parent = map[c.parent];
-    else if(!entryById(c.parent)) c.parent = null;
-  });
-  copies.forEach(classify);
-  store.trips.push.apply(store.trips, copies);
-  return {roots: copies.filter(c => !c.parent), attached: copies.filter(c => c.parent)};
+  return wrap;
 }
+
+function setToggle(group, key, dflt, name){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chipbtn";
+  const on = () => { const g = SET()[group]; return g && g[key] != null ? !!g[key] : dflt; };
+  b.textContent = name;
+  b.classList.toggle("on", on());
+  b.addEventListener("click", () => {
+    const g = SET()[group] || (SET()[group] = {});
+    g[key] = !on();
+    b.classList.toggle("on", !!g[key]);
+    save(); render();
+  });
+  return b;
+}
+
+function section(title, note){
+  const d = document.createElement("div");
+  d.innerHTML = '<label>'+esc(title)+(note ? ' <span class="opt">— '+esc(note)+'</span>' : '')+'</label>';
+  return d;
+}
+
+const STAY_TYPES = STOP_TYPES;
+function renderSettings(){
+  const box = $("#setBody"); box.innerHTML = "";
+  const add = el => box.appendChild(el);
+
+  add(section("Behaviour"));
+  const beh = document.createElement("div"); beh.className = "chips wrap";
+  beh.appendChild(setToggle("misc", "autoDrop", true, "Open plans on the day"));
+  add(beh);
+  add(setField("misc", "maxGap", 360, {name:"Ignore gaps longer than", dur:true}));
+  add(setField("misc", "aboardBefore", 30, {name:"All aboard before sailing", dur:true}));
+  add(setField("misc", "rippleSteps", "15,30,45,60,120", {name:"Late-by steps", text:true}));
+  add(setField("misc", "checkout", "10:00", {name:"Hotel check-out, next morning", text:true}));
+
+  add(section("Journeys", "spare and slip in minutes, typical as 90, 2h or 7d. 0 turns a check off"));
+  add(headRow());
+  MOVE_TYPES.forEach(m => add(typeRow(m)));
+
+  add(section("Can't be missed by default", "tap to change what a new entry starts as"));
+  const hardRow = document.createElement("div"); hardRow.className = "chips wrap";
+  MOVE_TYPES.forEach(m => hardRow.appendChild(setToggle("hard", m, !!SEED_FIXED[m], m)));
+  add(hardRow);
+
+  add(section("Stays and events", "typical length used when you open an end-time picker"));
+  STAY_TYPES.filter(m => m !== "Hotel" && m !== "Apartment")
+    .forEach(m => add(setField("typical", m, TYPICAL[m] || 60, {name:m, dur:true})));
+
+  add(section("Port calls"));
+  PORT_TYPES.forEach(m => add(setField("typical", m, TYPICAL[m] || 540, {name:m, dur:true})));
+
+  add(section("Preset times", "what the buttons in the buffers list fill in"));
+  [["there","Be there, before departure",150],["bag","Bag drop, before departure",60],
+   ["gate","Gate / all aboard, before departure",30],["off","Off and clear, after arrival",40],
+   ["walk","Walk to it",10],["leave","Leave for this, before start",30],
+   ["getto","Getting there",15],["arrive","Be there, before start",10],["out","Out by, after end",0],
+   ["after","Leaving, after end",10],["ashore","Ashore by, after docking",30],
+   ["back","Back at gangway, before sailing",45],["shuttle","Last shuttle, before sailing",60],
+   ["tender","Tender queue",30]
+  ].forEach(([k, name, d]) => add(setField("preset", k, d, {name:name, dur:true})));
+
+  add(section("Conversion rates", "pounds per unit"));
+  ["EUR","USD","CHF"].forEach(c => {
+    const wrap = document.createElement("div");
+    wrap.className = "setrow";
+    wrap.innerHTML = '<span class="sname">1 '+c+' =</span><input type="number" step="0.001" inputmode="decimal" value="'+
+      esc(String(store.rate[c]))+'">';
+    wrap.querySelector("input").addEventListener("change", e => {
+      const v = parseFloat(e.target.value);
+      if(!isNaN(v) && v > 0){ store.rate[c] = v; save(); render(); }
+    });
+    add(wrap);
+  });
+
+  const v = document.createElement("div");
+  v.className = "ver"; v.textContent = "Itinerary · version " + APP_VERSION;
+  add(v);
+}
+
+function headRow(){
+  const d = document.createElement("div");
+  d.className = "setrow head";
+  d.innerHTML = '<span class="sname"></span><span>spare</span><span>slip</span><span>typical</span>';
+  return d;
+}
+
+function typeRow(m){
+  const d = document.createElement("div");
+  d.className = "setrow trio";
+  d.innerHTML = '<span class="sname">'+esc(m)+'</span>';
+  [["spare", TIGHT[m] != null ? TIGHT[m] : 20, false],
+   ["slip",  SLIP[m]  != null ? SLIP[m]  : 10, false],
+   ["typical", TYPICAL[m] || 60, true]].forEach(([group, dflt, isDur]) => {
+    const stored = SET()[group] && SET()[group][m] != null ? SET()[group][m] : null;
+    const i = document.createElement("input");
+    if(isDur){ i.type = "text"; }
+    else { i.type = "number"; i.min = "0"; i.step = "1"; i.inputMode = "numeric"; }
+    i.value = stored == null ? "" : (isDur ? showDur(stored) : stored);
+    i.placeholder = isDur ? showDur(dflt) : dflt;
+    i.addEventListener("change", () => {
+      const g = SET()[group] || (SET()[group] = {});
+      const raw = i.value.trim();
+      if(raw === "") delete g[m];
+      else if(isDur){
+        const v = parseDur(raw);
+        if(v == null || v < 0){
+          const live = g[m] != null ? g[m] : null;
+          i.value = live == null ? "" : showDur(live);
+          toast("Try 90, 2h or 7d"); return;
+        }
+        g[m] = v; i.value = showDur(v);
+      }
+      else g[m] = parseInt(raw, 10);
+      save(); render();
+    });
+    d.appendChild(i);
+  });
+  return d;
+}
+
+$("#mSettings").addEventListener("click", () => { hideAll(); renderSettings(); show("#settings"); });
+$("#setClose").addEventListener("click", hideAll);
+$("#setReset").addEventListener("click", () => {
+  if(!confirm("Put every setting back to its default?")) return;
+  store.settings = {};
+  save(); render(); renderSettings(); toast("Reset");
+});
 
 $("#mExport").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(store,null,2)], {type:"application/json"});
@@ -1633,6 +2087,8 @@ $("#fileIn").addEventListener("change", e => {
       if(p && Array.isArray(p.trips)){
         store = p;
         if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
+if(!store.settings) store.settings = {};
+const SET = () => store.settings || (store.settings = {});
       } else if(p && Array.isArray(p.legs)){           // old single-trip backup
         const t = newTrip(p.trip || "Restored trip");
         t.legs = p.legs.map(l => Object.assign({kind:"move", cost:null, ccy:"GBP"}, l));
