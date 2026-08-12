@@ -404,7 +404,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -1376,11 +1376,15 @@ function absorb(list){
     map[t.id] = c.id;
     return c;
   });
-  copies.forEach(c => { if(c.parent) c.parent = map[c.parent] || null; });
+  // a parent inside the file is remapped; a parent that already exists here is left alone,
+  // which is what lets a file of plans attach to entries you've already got
+  copies.forEach(c => {
+    if(!c.parent) return;
+    if(map[c.parent]) c.parent = map[c.parent];
+    else if(!entryById(c.parent)) c.parent = null;
+  });
   store.trips.push.apply(store.trips, copies);
-  const roots = copies.filter(c => !c.parent);
-  roots.forEach(r => { r.parent = null; });
-  return roots;
+  return {roots: copies.filter(c => !c.parent), attached: copies.filter(c => c.parent)};
 }
 
 $("#mExport").addEventListener("click", () => {
@@ -1401,11 +1405,13 @@ $("#fileIn").addEventListener("change", e => {
     try{
       const p = JSON.parse(r.result);
       if(p && p.format === "itinerary-share" && Array.isArray(p.itineraries)){
-        const roots = absorb(p.itineraries);
-        if(!roots.length) throw 0;
-        store.active = roots[0].id; store.viewing = roots[0].id;
+        const got = absorb(p.itineraries);
+        if(!got.roots.length && !got.attached.length) throw 0;
+        if(got.roots.length){ store.active = got.roots[0].id; store.viewing = got.roots[0].id; }
         save(); render(); hideAll();
-        toast("Added " + roots[0].name);
+        toast(got.roots.length
+          ? "Added " + got.roots[0].name
+          : "Added " + got.attached.length + " plans to entries you already had");
         return;
       }
       if(p && Array.isArray(p.trips)){
