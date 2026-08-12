@@ -15,6 +15,7 @@
     --bg:#0b1017; --bg2:#121a24; --card:#161f2b; --line:#25313f;
     --tx:#e8eef6; --tx2:#9aa9bb; --tx3:#6b7c90;
     --accent:#4da3ff; --good:#3ecf8e; --warn:#f5a623; --bad:#ff6b6b; --stay:#b388ff;
+    --act:#79a8d8;   /* every action icon, one colour */
     --r:14px; --gut:52px; --pad:14px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -79,16 +80,9 @@
     background:var(--card); border:1px solid var(--line); border-radius:var(--r);
     position:relative; overflow:hidden;
   }
-  .unit::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
-    background:var(--line); z-index:1}
   .unit + .unit{margin-top:8px}
   .unit.done{opacity:.58}
-  .unit.done::before{background:var(--tx3)}
-  .unit.live::before{background:var(--good)}
-  .unit.next::before{background:var(--accent)}
   .unit.stop{background:#1a1a2b; border-color:#2e2a45}
-  .unit.stop::before{background:var(--stay)}
-  .unit.stop.done::before{background:var(--tx3)}
   .unit.provisional{border-style:dashed}
 
   .leg{
@@ -148,65 +142,60 @@
   .meta.st{margin-top:4px}
   .chip.crit{background:#3a1f22; color:#ff9b9b; font-weight:700}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
-  .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
-  .links a{
-    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
-    background:none; border:0; color:var(--accent);
-    padding:6px 2px; font-size:12.5px; font-weight:640; min-height:32px;
+  .rowbtns a{
+    display:inline-flex; align-items:center; text-decoration:none;
+    background:none; border:0; color:var(--act); padding:6px 4px; min-height:34px;
   }
-  .links{gap:16px}
   .endrow.tickrow .t{color:#7fdcae}
   .endrow.tickrow .d{color:#6fc79b}
   .unit.done .tickbtn.on{opacity:1}
   .iconb{
-    border:0; background:none; padding:4px 8px; color:var(--tx3);
+    border:0; background:none; padding:4px 8px; color:var(--act);
     display:inline-flex; align-items:center; justify-content:center;
   }
-  .iconb .ic{width:18px; height:18px}
+  .iconb .ic{width:21px; height:21px}
   #fab .ic{width:26px; height:26px; stroke-width:2.4}
-  .iconbtn .ic{width:19px; height:19px}
-  .links a .ic, .rowbtns .tickbtn .ic{width:14px; height:14px}
-  .rowbtns .tickbtn{display:inline-flex; align-items:center; gap:6px}
+  .iconbtn .ic{width:21px; height:21px; color:var(--act)}
+  .rowbtns a .ic, .rowbtns button .ic{width:21px; height:21px}
   .route .ic.pin{width:15px; height:15px; margin-right:7px; color:var(--stay)}
   .sea .ic{width:14px; height:14px; margin-right:7px; color:#6ba7c9}
   .confirm .ct .ic{width:14px; height:14px; margin-right:7px}
   .cb .more .ic{width:16px; height:16px}
-  .rowbtns{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center}
+  .rowbtns{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; align-items:center}
   .rowbtns .iconb{margin-left:auto; padding:6px 0}
-  /* an action is an icon and a word; it needs no box round it */
+  /* an action is an icon: no box, no label, one colour throughout */
   .rowbtns button{
-    background:none; border:0; border-radius:0; color:var(--tx2);
-    padding:6px 2px; font-size:12.5px; font-family:inherit; font-weight:640;
-    display:inline-flex; align-items:center; gap:6px; min-height:32px;
+    background:none; border:0; border-radius:0; color:var(--act);
+    padding:6px 4px; display:inline-flex; align-items:center; min-height:34px;
   }
-  .rowbtns .tickbtn.on{color:#79d3a5}
-  .rowbtns .tickbtn.held{color:#d0bd77}
 
-  /* a journey that runs for days holds everything booked inside it */
+  /* a journey that runs for days holds everything booked inside it: the band
+     is the scroll, unrolled between the two ends of the voyage */
+  /* the band widens outward rather than pushing its contents in, so a card on
+     the scroll keeps the same left edge — and the same time column — as one off it */
   .rail{
-    border-left:2px solid var(--stay); border-radius:2px;
-    padding-left:11px; margin-left:7px;
+    background:#191f31; padding:13px 12px; border-radius:var(--r);
+    border:1px solid #2b2740; margin:9px -13px;
   }
-  .rail > * + *{margin-top:8px}
-  .rail .nested{margin-left:16px}
+  .rail > * + *{margin-top:10px}
+  .rail .nested{margin-left:0}
   .rail .unit + .unit{margin-top:0}
+  .rail .dayhead{margin:15px 0 9px}
+  .rail .dayhead:first-child{margin-top:2px}
   .sea{
-    font-size:12px; color:var(--tx3); letter-spacing:.03em;
-    padding:9px 2px 9px calc(var(--pad) + var(--gut) + 12px); font-style:italic;
+    display:flex; align-items:center; gap:9px;
+    font-size:12.5px; color:var(--tx3); letter-spacing:.02em; font-style:italic;
+    padding:13px 14px; border:1px dashed #2b3348; border-radius:var(--r);
   }
 
 
   .unit.anchor{background:#171b2e; border-color:#33305c}
-  .unit.anchor::before{background:var(--stay); width:9px}
-  .unit.anchor.board{border-bottom-left-radius:0}
-  .unit.anchor.disembark{border-top-left-radius:0}
   .alab{
     font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
     color:var(--stay); font-weight:800; margin-bottom:2px;
   }
 
   .unit.port{border-style:dashed; border-color:#33305c; background:#15182a}
-  .unit.port::before{background:var(--stay)}
 
   .gap{
     display:flex; align-items:center; margin:4px 0;
@@ -591,6 +580,7 @@
 <div class="sheet" id="menu">
   <div class="grab"></div>
   <h2>Options</h2>
+  <button class="menuitem" id="mReload">Reload the app<small id="reloadSub">Fetch the newest version, past the cache</small></button>
   <button class="menuitem" id="mSettings">Settings<small>Warnings, thresholds, conversion rates</small></button>
   <button class="menuitem" id="mText">Copy this itinerary as text<small>Plain text for a message or email</small></button>
   <button class="menuitem" id="mShare">Export this itinerary<small>Just this one, with its plans — for sharing or moving</small></button>
@@ -607,7 +597,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "8.3";
+const APP_VERSION = "9.4";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
@@ -982,6 +972,7 @@ function render(){
   $("#empty").hidden = all.length > 0;
   const list = $("#list"); list.innerHTML = "";
   const now = NOW();
+  warnedClose = null;
   if(pretending()){
     const w = document.createElement("div");
     w.className = "pretend";
@@ -1107,7 +1098,17 @@ function render(){
   items.sort((a,b) => (!a.t && !b.t) ? 0 : !a.t ? 1 : !b.t ? -1 : a.t - b.t);
 
   /* ---- draw ---- */
-  let curDay = null, rail = null, prevEnd = null, prevTo = "", prevItem = null, prevLeg = null;
+  let curDay = null, rail = null, railSpan = null, prevEnd = null, prevTo = "", prevItem = null, prevLeg = null;
+  /* one band per voyage: opened when the first thing aboard is drawn, and kept
+     open — day headings and all — until the ship arrives */
+  const railFor = span => {
+    if(!span){ rail = null; railSpan = null; return list; }
+    if(railSpan !== span.l.id){
+      rail = document.createElement("div"); rail.className = "rail";
+      list.appendChild(rail); railSpan = span.l.id;
+    }
+    return rail;
+  };
   items.forEach(it => {
     const day = it.t ? dayKey(it.t) : "tbc";
 
@@ -1117,29 +1118,26 @@ function render(){
       const empty = daysBetween(prevItem.t, it.t) - 1;
       if(empty >= 1){
         const r = document.createElement("div");
-        r.className = "rail";
-        r.innerHTML = '<div class="sea">'+icon("sea")+empty+(empty===1 ? " day" : " days")+' at sea</div>';
-        list.appendChild(r);
-        rail = null; curDay = null;
+        r.className = "sea";
+        r.innerHTML = icon("sea")+empty+(empty===1 ? " day" : " days")+' at sea';
+        railFor(it.span).appendChild(r);
+        curDay = null;
       }
     }
 
     if(day !== curDay){
-      curDay = day; rail = null;
+      curDay = day;
       const h = document.createElement("div");
       h.className = "dayhead";
       h.innerHTML = "<span>"+esc(it.t ? dayLabel(it.t) : "Date to be confirmed")+"</span>";
-      list.appendChild(h);
+      // days inside a voyage belong on the scroll, not beside it
+      ((it.type === "entry" || it.x.l.kind === "port") ? railFor(it.span) : list).appendChild(h);
     }
 
-    const box = () => {
-      if(!it.span) { rail = null; return list; }
-      if(!rail){ rail = document.createElement("div"); rail.className = "rail"; list.appendChild(rail); }
-      return rail;
-    };
+    const box = () => railFor(it.span);
 
     if(it.type === "board" || it.type === "disembark"){
-      rail = null;                       // board/disembark cap the rail, they don't sit in it
+      railFor(null);                     // the two ends clamp the scroll, they aren't on it
       if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
         const v = gapRow(judge(it.x, it.t, prevEnd, prevTo, all, prevLeg));
         if(v) list.appendChild(v);
@@ -1276,6 +1274,51 @@ function unforgiving(x){
 // how late a thing might plausibly run, by what you're arriving on
 /* slack = gap − connection. Connection is spent; slack absorbs lateness.
    A target is your planning line: crossing it is a loss of confidence, not a failure. */
+/* ===== float ==========================================================
+   Free float — the gap to the next item — answers nothing on its own, which
+   is why it is never shown. Total float is the one that matters: how much
+   the whole chain can slip before the next thing that cannot move. Negative
+   total float is the only condition worth raising your voice about. */
+
+// a moment that cannot move: something withdrawn, or a departure with no replacement
+function constraintAfter(from, all){
+  let best = null;
+  const take = (t, label, y) => {
+    if(t && t >= from && (!best || t < best.t)) best = {t:t, label:label, y:y};
+  };
+  all.forEach(y => {
+    cueList(y).forEach(z => { if(z.kind === "closes" && z.t) take(z.t, z.c.label || "it closes", y); });
+    if(y.l.kind === "move" && y.s && unforgiving(y)) take(y.s, titleOf(y), y);
+  });
+  return best;
+}
+
+/* Walk the chain forward from the moment you're free and see where it lands.
+   Summing durations isn't enough: a scheduled service won't leave early, so
+   waiting for it is part of what the chain costs. A stay can be cut short,
+   which is why only journeys and transfers consume time here. */
+function totalFloat(freeAt, all){
+  const c = constraintAfter(freeAt, all || []);
+  if(!c || !freeAt) return null;
+  let eta = new Date(freeAt.getTime()), prev = null;
+  for(const y of (all || [])){
+    const s = y.s || y.e;
+    if(!s){ continue; }
+    if(s < freeAt){ prev = y; continue; }
+    if(y.l.id === c.y.l.id){                       // reaching it is the whole question
+      eta = new Date(eta.getTime() + connMins(prev, y)*60000);
+      break;
+    }
+    if(s > c.t) break;
+    eta = new Date(eta.getTime() + connMins(prev, y)*60000);
+    if(y.s && eta < y.s) eta = new Date(y.s.getTime());          // it won't leave early
+    if(y.l.kind === "move" && y.s && y.e) eta = new Date(eta.getTime() + Math.max(0, mins(y.e - y.s))*60000);
+    prev = y;
+  }
+  return {at:c, float: mins(c.t - eta)};
+}
+
+let warnedClose = null;      // one warning per immovable thing, per render
 function judge(x, at, prevEnd, prevTo, all, prevLeg){
   const gap = mins(at - prevEnd);
   const conn = connMins(prevLeg || null, x);
@@ -1283,6 +1326,18 @@ function judge(x, at, prevEnd, prevTo, all, prevLeg){
 
   if(gap < 0)   return {level:"clash", text:"⚠ Overlaps the previous item by " + dur(-gap)};
   if(slack < 0) return {level:"clash", text:"⚠ " + dur(-slack) + " short"};
+
+  // the one that answers "will I make it" — said once, at the earliest point
+  // where you could still do something about it
+  const tf = totalFloat(prevEnd, all || []);
+  if(tf && tf.float < 0){
+    const key = tf.at.y.l.id + "@" + tf.at.t.getTime();
+    if(key !== warnedClose){
+      warnedClose = key;
+      return {level:"clash", text:"⚠ " + dur(-tf.float) + " short of " + tf.at.label};
+    }
+  }
+
   if(gap >= +opt("misc", "maxGap")) return null;
 
   // All time is spare until you give it a job. Following the plan, the only
@@ -1632,8 +1687,9 @@ function rowBtns(l, mode, x){
   const show = at || onItsDay(l, mode, x);
   const held = !at && blockedBy(l);
   return (show ? '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
-         (at ? " on" : held ? " held" : "")+'">'+
-         (at ? icon("done")+"Done" : held ? icon("clock")+"Done" : icon("done")+"Done") + '</button>' : '')+
+         (at ? " on" : held ? " held" : "")+'" aria-label="'+
+         (at ? "Change the time you did this" : held ? "Confirm the port first" : "Mark done")+'">'+
+         (held ? icon("clock") : icon("done")) + '</button>' : '')+
          '<button data-edit="'+l.id+'" class="iconb" aria-label="Edit">'+icon("edit")+'</button>';
 }
 const onItsDay = (l, mode, x) => {
@@ -1707,9 +1763,9 @@ function item(spec){
   if(spec.chips && spec.chips.length) h += '<div class="meta">'+spec.chips.join("")+'</div>';
   if(spec.state && spec.state.length) h += '<div class="meta st">'+spec.state.join("")+'</div>';
   if(spec.notes) h += '<div class="notes">'+esc(spec.notes)+'</div>';
-  if(spec.links && spec.links.length) h += '<div class="links">'+spec.links.join("")+'</div>';
   h += spec.plans || "";
-  h += '<div class="rowbtns">'+(spec.btns || "")+'</div></div>';
+  // one strip: everything you can press, links first, edit pushed to the end
+  h += '<div class="rowbtns">'+((spec.links||[]).join(""))+(spec.btns || "")+'</div></div>';
   if(spec.end)  h += endRow(hhmm(spec.end), spec.tail || "");
   if(spec.done) h += endRow(hhmm(spec.done), "✓ done", "tickrow");
   el.innerHTML = h;
@@ -1720,11 +1776,12 @@ function item(spec){
 
 const linkList = l => (l.links || [])
   .filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()))
-  .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+linkIcon(a.label)+esc(a.label||"Open")+'</a>');
+  .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener" title="'+esc(a.label||"Open")+
+             '" aria-label="'+esc(a.label||"Open")+'">'+linkIcon(a.label)+'</a>');
 /* the label tells you what kind of thing it opens */
 function linkIcon(label){
   const t = (label || "").toLowerCase();
-  if(/wallet|pass|boarding/.test(t)) return icon("wallet");
+  if(/wallet|pass|boarding|ticket/.test(t)) return icon("ticket");
   if(/map|where|directions/.test(t)) return icon("map");
   if(/mail|email|message|booking|confirm/.test(t)) return icon("doc");
   return icon("open");
@@ -1809,7 +1866,7 @@ function anchor(it, now){
     klass: ["anchor", boarding ? "board" : "disembark"]
              .concat(ticked || (when && now > when) ? ["done"] : [])
              .concat(ticked ? ["ticked"] : []),
-    lead: goWord(l, boarding),
+    lead: boarding ? "" : goWord(l, boarding),
     name: esc(boarding ? (l.from || "?") : (l.to || l.from || "?")),
     chips: chips.filter(Boolean), state: boarding ? stateChips(l) : [],
     notes: boarding ? l.notes : "", links: boarding ? linkList(l) : [],
@@ -1823,11 +1880,12 @@ function portRow(x, now){
   const by = (l.aboard || l.portOK) ? aboardBy(x) : null;   // shown only when confirmed
   const chips = factChips(l);
   const agent = l.agent
-    ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'">'+icon("call")+'Call the port agent</a>'] : [];
+    ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'" title="Call the port agent" '+
+       'aria-label="Call the port agent">'+icon("call")+'</a>'] : [];
   return item({
     leg: l, start: x.s, end: x.e, done: parse(l.doneAt),
     klass: ["port"].concat(stateClass(l, x, now, !!l.doneAt)),
-    name: icon("anchor", "pin")+esc(l.place || "Port call"),
+    name: esc(l.place || "Port call"),
     chips: chips, state: stateChips(l), links: agent, plans: planChips(l), btns: rowBtns(l, "", x),
     tail: esc((x.e && x.s && dayKey(x.e) !== dayKey(x.s) ? short(x.e) + " · " : "") +
               (by ? "all aboard " + hhmm(by) : ""))
@@ -2152,6 +2210,15 @@ $("#fab").addEventListener("click", () => openSheet(null));
 $("#scrim").addEventListener("click", hideAll);
 $("#cancelBtn").addEventListener("click", hideAll);
 $("#verLine").textContent = "Itinerary · version " + APP_VERSION;
+$("#reloadSub").textContent = "You're on version " + APP_VERSION + " — fetch the newest, past the cache";
+
+/* Added to the home screen, iOS will happily serve you a months-old copy.
+   A changing query string is the one thing it won't cache. Your data lives
+   in local storage against the origin, so none of it moves. */
+$("#mReload").addEventListener("click", () => {
+  toast("Fetching the newest version…");
+  setTimeout(() => location.replace(location.origin + location.pathname + "?v=" + Date.now()), 300);
+});
 $("#upBtn").innerHTML   = icon("back");
 $("#menuBtn").innerHTML = icon("menu");
 $("#fab").innerHTML     = icon("add");
