@@ -101,6 +101,9 @@
     padding:5px 0 5px 12px; margin-left:8px; line-height:1.35;
     border-left:2px solid #4a3f7a;
   }
+  .cue.hashard{border-left-color:#6b5426}
+  .cue .hard{color:var(--warn); font-weight:650}
+  .cue .soft{color:#c3b0ff}
   .cue.before{margin-bottom:2px}
   .cue.after{margin-top:2px}
   .leg + .cue.before{margin-top:8px}
@@ -113,6 +116,9 @@
     padding:1px 6px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
   }
   .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
+  .chip.done{background:#152a20; border-color:#25452f; color:#6fc79b}
+  .chip.todo{background:none; border-style:dashed; color:var(--tx3)}
+  .leg.provisional{border-style:dashed}
   .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
   .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
@@ -168,6 +174,10 @@
     font-size:12px; color:var(--tx3); padding-left:12px; border-left:2px dashed var(--line);
     min-height:26px;
   }
+  .gap.soft{color:var(--tx3)}
+  .gap.soft::before{content:"· "}
+  .gap.ok{color:var(--tx3); border-left-style:solid; border-color:#25452f}
+  .gap.ok::before{content:"✓ "; color:var(--good)}
   .gap.tight{color:var(--warn); border-color:#4a3a1a}
   .gap.clash{color:var(--bad); border-color:#4a2323; font-weight:600}
 
@@ -216,6 +226,16 @@
     padding:9px 6px; border-radius:9px;
   }
   .seg button.on{background:var(--accent); color:#04121f; font-weight:700}
+  .seg.small{margin-bottom:0}
+  .seg.small button{font-size:12.5px; padding:8px 4px}
+  .seg.small button.on{background:#3f3668; color:#e6dcff}
+  .chips{display:flex; gap:8px; margin-top:2px}
+  .chips button{
+    flex:1; background:var(--card); border:1px dashed var(--line); color:var(--tx3);
+    border-radius:11px; padding:10px 4px; font:600 13px inherit; font-family:inherit;
+  }
+  .chips button.on{background:#152a20; border-style:solid; border-color:#25452f; color:#7fdcae}
+  .chips button.on::before{content:"✓ "}
 
   /* label on its own line so the picker and the remove button always fit */
   .cuerow{
@@ -225,10 +245,16 @@
   .cuerow input{background:var(--bg2); min-width:0}
   .cuerow .cl{flex:1 1 100%}
   .cuerow .ct{flex:1 1 0; min-width:0; font-size:15px; padding:9px 10px}
-  .cuerow button{
+  .cuerow .cx{
     flex:0 0 42px; background:var(--bg2); border:1px solid var(--line);
     color:var(--tx3); border-radius:11px; font-size:17px;
   }
+  .cuerow .ck{
+    flex:0 0 auto; background:var(--bg2); border:1px solid #3f3668; color:#c3b0ff;
+    border-radius:11px; padding:0 11px; font:700 11.5px inherit; font-family:inherit;
+    letter-spacing:.04em; text-transform:uppercase;
+  }
+  .cuerow .ck.hard{border-color:#5a4520; color:var(--warn); background:#241d10}
 
   .linkrow{display:flex; gap:8px; margin-top:8px}
   .linkrow input:first-child{flex:0 0 34%}
@@ -323,14 +349,8 @@
   <div id="rowBoard" hidden>
     <label>Buffers and deadlines <span class="opt">(optional — anything you must do before or after)</span></label>
     <div id="cueRows"></div>
-    <div class="quick" id="cuePresets">
-      <button type="button" data-cue="there">+ Be there</button>
-      <button type="button" data-cue="bag">+ Bag drop</button>
-      <button type="button" data-cue="gate">+ Gate / all aboard</button>
-      <button type="button" data-cue="off">+ Off and clear</button>
-      <button type="button" data-cue="blank">+ Custom</button>
-    </div>
-    <div class="hint">Presets fill a sensible time from the ones above — change any of them. Anything at or before the departure shows above the card; anything after the arrival shows below it.</div>
+    <div class="quick" id="cuePresets"></div>
+    <div class="hint">Presets fill a sensible time from the ones above — change any of them. Anything at or before the start shows above the card; anything at or after the end shows below it. For a port call, the All-aboard field is separate because it also drives the warnings on anything you book ashore.</div>
   </div>
 
   <div id="rowAboard" hidden>
@@ -342,6 +362,19 @@
   <div class="money">
     <input id="f_cost" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
     <select id="f_ccy"><option>GBP</option><option>EUR</option><option>USD</option><option>CHF</option></select>
+  </div>
+
+  <label id="lblMiss">Start time <span class="opt">— fixed means it goes without you</span></label>
+  <div class="seg small" id="missSeg">
+    <button type="button" data-miss="soft">Flexible</button>
+    <button type="button" data-miss="hard">Fixed</button>
+  </div>
+
+  <label>Status</label>
+  <div class="chips" id="statusRow">
+    <button type="button" data-st="booked">Booked</button>
+    <button type="button" data-st="paid">Paid</button>
+    <button type="button" data-st="checkedIn">Checked in</button>
   </div>
 
   <label for="f_ref">Reference / seat / room <span class="opt">(optional)</span></label>
@@ -404,7 +437,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.8";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -436,6 +469,34 @@ if(!store) store = blank();
 if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
 if(!store.trips.length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
 // v1.5: port calls that used to live inside a journey become entries in their own right
+// a cue is either their deadline or your buffer; guess once from the wording,
+// erring towards "yours" so nothing starts out nagging you
+const SEED_FIXED = {Flight:1, Cruise:1, Ferry:1};
+
+function classify(t){
+  let touched = false;
+  (t.legs || []).forEach(l => {
+    if(l.fixed !== true && l.fixed !== false){        // give every entry a real answer
+      l.fixed = !!SEED_FIXED[l.mode] || (l.cues || []).some(c => c.hard && c.at);
+      touched = true;
+    }
+    if(l.booked === undefined){                        // read what you'd already written down
+      const n = (l.notes || "") + " " + (l.ref || "");
+      l.booked = /book/i.test(n);
+      l.paid = /paid/i.test(n);
+      l.checkedIn = false;
+      touched = true;
+    }
+  });
+  (t.legs || []).forEach(l => (l.cues || []).forEach(c => {
+    if(c.hard === undefined){
+      c.hard = /(gate|clos|all aboard|last |deadline|cut-?off|check-?in)/i.test(c.label || "");
+      touched = true;
+    }
+  }));
+  return touched;
+}
+
 let migrated = false;
 store.trips.forEach(t => {
   const born = [];
@@ -449,6 +510,7 @@ store.trips.forEach(t => {
     delete l.stops;
   });
   if(born.length){ t.legs.push.apply(t.legs, born); migrated = true; }
+  if(classify(t)) migrated = true;
   // v1.9: the fixed boarding fields become a list you can add to
   t.legs.forEach(l => {
     if(l.thereBy || l.boardBy || l.offAt){
@@ -535,12 +597,32 @@ function totalsFor(t, into){
 }
 function totalsText(t){ const by = totalsFor(t); return Object.keys(by).map(c => money(by[c], c)); }
 
+// what you've recorded a cost for but haven't ticked as paid
+function owedFor(t, into){
+  const by = into || {};
+  if(!t) return by;
+  t.legs.forEach(l => {
+    const n = parseFloat(l.cost);
+    if(!isNaN(n) && n > 0 && !l.paid){ const c = l.ccy || "GBP"; by[c] = (by[c]||0) + n; }
+    const plan = livePlan(l.id);
+    if(plan) owedFor(plan, by);
+  });
+  return by;
+}
+
 const MOVE_TYPES = ["Flight","Train","Cruise","Ferry","Coach","Bus","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
 const PORT_TYPES = ["Port call","Sea day","Tender port","Other"];
 const ICONS = {Flight:"✈",Train:"🚆",Cruise:"🛳",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
   Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",
   "Port call":"⚓","Tender port":"⚓","Sea day":"🌊",Other:"•"};
+
+// how much slack is worth flagging, by what you're about to catch
+const TIGHT = {
+  Cruise:120, Ferry:45, Flight:60, Train:12, Coach:15, Bus:10, "Tube / Metro":8,
+  Taxi:10, Car:10, Walk:5, Transfer:10, "Port call":30, "Tender port":45
+};
+const tightFor = l => TIGHT[l.mode] != null ? TIGHT[l.mode] : 20;
 
 const DAY = 86400000;
 const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -554,14 +636,8 @@ function isSpan(x, all){
   return all.some(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.s >= x.s && y.s <= x.e);
 }
 // the time you act on, as against the time the vehicle moves
-function startOf(x){
-  if(x.l.kind === "move"){ const b = cuesFor(x, "before"); if(b.length) return b[0].t; }
-  return x.s;
-}
-function endOf(x){
-  if(x.l.kind === "move"){ const a = cuesFor(x, "after"); if(a.length) return a[a.length-1].t; }
-  return x.e;
-}
+function startOf(x){ const b = cuesFor(x, "before"); return b.length ? b[0].t : x.s; }
+function endOf(x){ const a = cuesFor(x, "after"); return a.length ? a[a.length-1].t : x.e; }
 const spanFrom = s => { const a = startOf(s), b = s.s; return (a && b && a < b) ? a : b; };
 const spanTo   = s => { const a = endOf(s),   b = s.e; return (a && b && a > b) ? a : b; };
 const encloses = (span, t) => {
@@ -622,6 +698,9 @@ function render(){
   }
   const tot = totalsText(t);
   if(tot.length) parts.push(tot.join(" · "));
+  const owed = owedFor(t);
+  const owedTxt = Object.keys(owed).map(c => money(owed[c], c)).join(" · ");
+  if(owedTxt) parts.push(owedTxt + " outstanding");
   $("#tripSub").textContent = parts.length ? parts.join(" · ") : "Tap + to begin";
 
   const spans = all.filter(x => isSpan(x, all));
@@ -707,11 +786,9 @@ function render(){
 
     if(it.type === "board" || it.type === "disembark"){
       rail = null;                       // board/disembark cap the rail, they don't sit in it
-      if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day && cuesFor(it.x, "before").length){
-        const g = mins(it.t - prevEnd);
-        if(g < 0) list.appendChild(gapRow("clash", "⚠ You'd arrive " + dur(-g) + " after boarding closes"));
-        else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
-          (g < 45 ? "⚠ " : "") + dur(g) + " to board" + (g < 45 ? " — tight" : "")));
+      if(it.type === "board" && prevEnd && it.t && dayKey(prevEnd) === day){
+        const row = judge(it.x, it.t, prevEnd, prevTo, all);
+        if(row) list.appendChild(row);
       }
       if(it.type === "board"){ const c = beforeCue(it.x); if(c) list.appendChild(c); }
       list.appendChild(anchor(it, now));
@@ -720,29 +797,24 @@ function render(){
         prevEnd = it.t; prevTo = it.x.l.to || it.x.l.from || "";
       }
     } else if(it.x.l.kind === "port"){
+      const pb = beforeCue(it.x); if(pb) box().appendChild(pb);
       box().appendChild(portRow(it.x, now));
+      const pa = afterCue(it.x); if(pa) box().appendChild(pa);
     } else {
       // connection warnings between consecutive journeys on the same day
       if(it.x.l.kind === "move" && !it.span){
         if(prevEnd && it.t && dayKey(prevEnd) === day){
-          const g = mins(it.t - prevEnd);
-          const deadline = cuesFor(it.x, "before").length > 0;
-          if(g < 0) list.appendChild(gapRow("clash", deadline
-            ? "⚠ You'd get there " + dur(-g) + " late"
-            : "⚠ Overlaps the previous journey by " + dur(-g)));
-          else if(g < 360) list.appendChild(gapRow(g < 45 ? "tight" : "",
-            (g < 45 ? "⚠ " : "") + dur(g) +
-            (deadline ? " spare" : " in " + (prevTo || "between")) +
-            (g < 45 ? " — tight" : "")));
+          const row = judge(it.x, it.t, prevEnd, prevTo, all);
+          if(row) list.appendChild(row);
         }
         prevEnd = endOf(it.x); prevTo = it.x.l.to || "";
       }
-      const before = it.x.l.kind === "move" ? beforeCue(it.x) : null;
+      const before = beforeCue(it.x);
       if(before){ if(it.port) before.classList.add("nested"); box().appendChild(before); }
       const el = card(it.x, now);
       if(it.port) el.classList.add("nested");
       box().appendChild(el);
-      const after = it.x.l.kind === "move" ? afterCue(it.x) : null;
+      const after = afterCue(it.x);
       if(after){ if(it.port) after.classList.add("nested"); box().appendChild(after); }
       // back-aboard check for anything ashore during a port call
       if(it.port){
@@ -776,26 +848,104 @@ function cueRow(text, where){
 
 // a cue belongs above the card if it lands at or before departure, below it otherwise
 function cuesFor(x, side){
+  const s = x.s, e = x.e || x.s;
+  // above the card if it lands at or before the start, below if at or after the end;
+  // a deadline inside the window (common on a port day) goes to whichever end it's nearer
+  const where = t => !s ? "before"
+                   : t <= s ? "before"
+                   : (e && t >= e) ? "after"
+                   : (e && (t - s) >= (e - t)) ? "after" : "before";
   return (x.l.cues || []).map(c => ({c:c, t:parse(c.at)})).filter(z => z.t)
-    .filter(z => (x.s && z.t <= x.s) ? side === "before"
-               : (x.e && z.t >= x.e) ? side === "after"
-               : side === "before")
+    .filter(z => where(z.t) === side)
     .sort((a,b) => a.t - b.t);
 }
 
 function cueBand(x, side){
   const list = cuesFor(x, side);
   if(!list.length) return null;
-  return cueRow("⏱ " + list.map(z => (z.c.label ? z.c.label + " " : "") + hhmm(z.t)).join(" · "), side);
+  const d = document.createElement("div");
+  d.className = "cue " + side + (list.some(z => z.c.hard) ? " hashard" : "");
+  d.innerHTML = "⏱ " + list.map(z =>
+    '<span class="' + (z.c.hard ? "hard" : "soft") + '">' +
+    (z.c.label ? esc(z.c.label) + " " : "") + hhmm(z.t) + '</span>').join(" · ");
+  return d;
 }
 const beforeCue = x => cueBand(x, "before");
 const afterCue  = x => cueBand(x, "after");
+
+/* Something is UNFORGIVING if missing it can't be undone — a flight, a cruise, a ferry,
+   or anything you've marked with a Deadline. Trains and buses run again. */
+const UNFORGIVING = {Flight:1, Cruise:1, Ferry:1};
+// fixed is about the START: whether the thing leaves without you.
+// An arrival time is a forecast, not a commitment, so it never makes anything fixed.
+function unforgiving(x){
+  if(x.l.fixed === true || x.l.fixed === false) return x.l.fixed;
+  return !!UNFORGIVING[x.l.mode] || (x.l.cues || []).some(c => c.hard && c.at);
+}
+
+// the next thing down the chain that you genuinely can't miss
+function nextHard(x, all){
+  const from = startOf(x) || x.s;
+  if(!from) return null;
+  for(const y of all){
+    const t = startOf(y) || y.s;
+    if(!t || t <= from || y.l.id === x.l.id) continue;
+    if(unforgiving(y)) return {y:y, t:t, lead:mins(t - from)};
+  }
+  return null;
+}
+
+/* Deadlines are theirs; buffers are yours. Miss either and it's a clash.
+   Thin slack only matters against a deadline — or when losing it would cascade
+   into something unforgiving later the same day. */
+function judge(x, at, prevEnd, prevTo, all){
+  const g = mins(at - prevEnd);
+  const first = cuesFor(x, "before")[0] || null;
+
+  if(g < 0){
+    return gapRow("clash", first
+      ? "⚠ You'd miss “" + (first.c.label || "your own time") + "” by " + dur(-g)
+      : "⚠ Overlaps the previous journey by " + dur(-g));
+  }
+  if(g >= 360) return null;
+
+  if(first && !first.c.hard){
+    return gapRow("ok", dur(g) + " spare — on plan");     // your time, and you make it
+  }
+
+  const limit = tightFor(x.l);
+  if(g < limit){
+    if(unforgiving(x)){
+      return gapRow("tight", "⚠ " + dur(g) + " spare — tight for a " +
+        (x.l.mode || "connection").toLowerCase() + ", allow " + dur(limit));
+    }
+    const nx = nextHard(x, all || []);
+    if(nx && nx.lead <= 720){
+      const what = nx.y.l.kind === "move"
+        ? (nx.y.l.mode || "journey").toLowerCase() + (nx.y.l.to ? " to " + nx.y.l.to : "")
+        : titleOf(nx.y);
+      return gapRow("tight", "⚠ " + dur(g) + " spare — tight, and the " + what +
+        " at " + hhmm(nx.t) + " is only " + dur(nx.lead) + " behind it");
+    }
+    return gapRow("soft", dur(g) + " — tight, but nothing fixed follows it");
+  }
+  return gapRow("", dur(g) + (first ? " spare" : " in " + (prevTo || "between")));
+}
 
 function gapRow(cls, text){
   const d = document.createElement("div");
   d.className = "gap " + cls;
   d.textContent = text;
   return d;
+}
+
+function statusChips(l){
+  const out = [];
+  if(l.booked) out.push('<span class="chip done">booked</span>');
+  if(l.paid) out.push('<span class="chip done">paid</span>');
+  if(l.checkedIn) out.push('<span class="chip done">checked in</span>');
+  if(!l.booked) out.push('<span class="chip todo">not booked</span>');
+  return out;
 }
 
 function titleOf(x){
@@ -805,7 +955,14 @@ function titleOf(x){
   return (l.from||"?") + " → " + (l.to||"?");
 }
 
-/* boarding / disembarking cards at each end of a span */
+// the label sits beside the vehicle's own time, so it has to describe the vehicle
+function anchorWord(mode, start){
+  if(mode === "Cruise" || mode === "Ferry") return start ? "Sails" : "Arrives";
+  if(mode === "Flight")                     return start ? "Departs" : "Lands";
+  return start ? "Departs" : "Arrives";
+}
+
+/* the cards at each end of a span */
 function anchor(it, now){
   const x = it.x, l = x.l, boarding = it.type === "board";
   const el = document.createElement("div");
@@ -815,16 +972,20 @@ function anchor(it, now){
   const where = boarding ? (l.from || "?") : (l.to || l.from || "?");
 
   let h = '<div class="times"><div class="a">'+(when?hhmm(when):"—")+'</div></div><div class="body">';
-  h += '<div class="alab">'+(boarding ? "Board" : "Disembark")+'</div>';
+  h += '<div class="alab">'+esc(anchorWord(l.mode, boarding))+'</div>';
   h += '<div class="route">'+esc(where)+'</div>';
 
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
+  if(boarding) statusChips(l).forEach(c => bits.push(c));
   if(boarding){
     const c = parseFloat(l.cost);
     if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
     const on = startOf(x), off = endOf(x);
     if(on && off) bits.push('<span>'+dur(mins(off - on))+' aboard</span>');
-    if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
+    if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
+  if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
+  statusChips(l).forEach(c => bits.push(c));
+  if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   } else {
     const roll = spanTotals(it.span);
     Object.keys(roll).forEach(c => bits.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
@@ -891,6 +1052,7 @@ function portRow(x, now){
   if(by && x.e) sub.push("all aboard " + hhmm(by));
   const c = parseFloat(l.cost);
   if(!isNaN(c) && c > 0) sub.push(money(c, l.ccy||"GBP"));
+  if(l.booked) sub.push("booked");
   el.innerHTML = '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
                  (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
                  '<button data-edit="'+l.id+'">Edit</button>' + planChips(l);
@@ -916,7 +1078,7 @@ function renderTotals(){
 function card(x, now){
   const l = x.l, stop = l.kind === "stop";
   const el = document.createElement("div");
-  let cls = "leg" + (stop ? " stop" : "");
+  let cls = "leg" + (stop ? " stop" : "") + (l.booked ? "" : " provisional");
   if(x.e && now > x.e) cls += " done";
   else if(x.s && x.e && now >= x.s && now <= x.e) cls += " live";
   else if(x.s && x.s > now) cls += " next";
@@ -944,6 +1106,9 @@ function card(x, now){
     const d = mins(x.e - x.s);
     if(d >= 0) bits.push('<span>'+dur(d)+'</span>');
   }
+  if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
+  if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
+  statusChips(l).forEach(c => bits.push(c));
   if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   h += '<div class="meta">'+bits.join("")+'</div>';
 
@@ -999,7 +1164,8 @@ function setKind(k){
   $("#f_place").placeholder = k === "port" ? "Lisbon" : "Hôtel Fabric, 31 rue de la Folie";
   $("#lblStart").textContent = k === "move" ? "Departs" : k === "port" ? "Ship arrives" : "Starts / check in";
   $("#lblEnd").textContent   = k === "move" ? "Arrives" : k === "port" ? "Ship sails"   : "Ends / check out";
-  $("#rowBoard").hidden = k !== "move";
+  $("#rowBoard").hidden = false;
+  buildPresets(k);
   const types = k === "move" ? MOVE_TYPES : k === "port" ? PORT_TYPES : STOP_TYPES;
   const cur = $("#f_mode").value;
   $("#f_mode").innerHTML = types.map(t => '<option>'+t+'</option>').join("");
@@ -1012,8 +1178,15 @@ function cueRowEditor(c){
   r.className = "cuerow";
   r.innerHTML = '<input class="cl" placeholder="What has to happen" value="'+esc(c.label||"")+'" autocomplete="off">'+
                 '<input class="ct" type="datetime-local" value="'+esc(c.at||"")+'">'+
-                '<button type="button" aria-label="Remove">×</button>';
-  r.querySelector("button").addEventListener("click", () => r.remove());
+                '<button type="button" class="ck'+(c.hard?" hard":"")+'">'+(c.hard?"Deadline":"Buffer")+'</button>'+
+                '<button type="button" class="cx" aria-label="Remove">×</button>';
+  const kind = r.querySelector(".ck");
+  kind.addEventListener("click", () => {
+    const on = !kind.classList.contains("hard");
+    kind.classList.toggle("hard", on);
+    kind.textContent = on ? "Deadline" : "Buffer";
+  });
+  r.querySelector(".cx").addEventListener("click", () => r.remove());
   $("#cueRows").appendChild(r);
   return r;
 }
@@ -1021,9 +1194,21 @@ function cueRowEditor(c){
 function readCues(){
   return [...document.querySelectorAll("#cueRows .cuerow")].map(r => ({
     label: r.querySelector(".cl").value.trim(),
-    at:    r.querySelector(".ct").value
+    at:    r.querySelector(".ct").value,
+    hard:  r.querySelector(".ck").classList.contains("hard")
   })).filter(c => c.at).sort((a,b) => a.at.localeCompare(b.at));
 }
+
+let missMode = "soft";
+function setMiss(v){
+  missMode = v;
+  document.querySelectorAll("#missSeg button").forEach(b => b.classList.toggle("on", b.dataset.miss === v));
+}
+function setStatus(l){
+  document.querySelectorAll("#statusRow button").forEach(b =>
+    b.classList.toggle("on", !!(l && l[b.dataset.st])));
+}
+const readStatus = k => $("#statusRow button[data-st=" + k + "]").classList.contains("on");
 
 function linkRow(label, url){
   const r = document.createElement("div");
@@ -1050,6 +1235,8 @@ function openSheet(id){
   $("#f_cost").value  = l && l.cost != null ? l.cost : "";
   $("#f_ccy").value   = l ? (l.ccy || "GBP") : "GBP";
   $("#f_aboard").value = l ? (l.aboard || "") : "";
+  setMiss(l ? (l.fixed ? "hard" : "soft") : (SEED_FIXED[$("#f_mode").value] ? "hard" : "soft"));
+  setStatus(l);
   $("#cueRows").innerHTML = "";
   ((l && l.cues) || []).forEach(c => cueRowEditor(c));
   $("#f_ref").value   = l ? (l.ref || "") : "";
@@ -1122,7 +1309,9 @@ function collect(){
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
     ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
     aboard: kind === "port" ? $("#f_aboard").value : "",
-    cues: kind === "move" ? readCues() : []
+    cues: readCues(),
+    fixed: missMode === "hard",
+    booked: readStatus("booked"), paid: readStatus("paid"), checkedIn: readStatus("checkedIn")
   };
 }
 
@@ -1251,6 +1440,12 @@ $("#newTrip").addEventListener("click", () => {
 
 document.querySelectorAll("#kindSeg button").forEach(b =>
   b.addEventListener("click", () => setKind(b.dataset.kind)));
+document.querySelectorAll("#missSeg button").forEach(b =>
+  b.addEventListener("click", () => setMiss(b.dataset.miss)));
+document.querySelectorAll("#statusRow button").forEach(b =>
+  b.addEventListener("click", () => b.classList.toggle("on")));
+// picking a type re-seeds the start-time answer, until you've touched it yourself
+$("#f_mode").addEventListener("change", () => { if(!editing) setMiss(SEED_FIXED[$("#f_mode").value] ? "hard" : "soft"); });
 
 // opening an empty arrival picker starts it just after the departure
 ["focus","click"].forEach(ev => $("#f_end").addEventListener(ev, suggestEnd));
@@ -1265,28 +1460,48 @@ $("#f_mode").addEventListener("change", suggestEnd);
 });
 
 const CUE_PRESETS = {
-  there: {mins:-150, after:false, label:l => "Be at " + (l || "the terminal")},
-  bag:   {mins:-60,  after:false, label:() => "Bag drop closes"},
-  gate:  {mins:-30,  after:false, label:(l, mode) => (mode === "Cruise" || mode === "Ferry") ? "All aboard" : "Gate closes"},
-  off:   {mins:40,   after:true,  label:(l, mode) => (mode === "Cruise" || mode === "Ferry") ? "Off the ship" : "Off and clear"},
-  blank: {mins:0,    after:false, label:() => ""}
+  move: [
+    {key:"there", label:"+ Be there",        mins:-150, from:"start", hard:false, text:l => "Be at " + (l || "the terminal")},
+    {key:"bag",   label:"+ Bag drop",        mins:-60,  from:"start", hard:true,  text:() => "Bag drop closes"},
+    {key:"gate",  label:"+ Gate / all aboard", mins:-30, from:"start", hard:true,
+                  text:(l, m) => (m === "Cruise" || m === "Ferry") ? "All aboard" : "Gate closes"},
+    {key:"off",   label:"+ Off and clear",   mins:40,   from:"end",   hard:false,
+                  text:(l, m) => (m === "Cruise" || m === "Ferry") ? "Off the ship" : "Off and clear"},
+  ],
+  stop: [
+    {key:"leave", label:"+ Leave by",        mins:-30,  from:"start", hard:false, text:() => "Leave for this by"},
+    {key:"arrive",label:"+ Be there",        mins:-10,  from:"start", hard:false, text:() => "Be there by"},
+    {key:"out",   label:"+ Out by",          mins:0,    from:"end",   hard:false, text:() => "Out by"},
+  ],
+  port: [
+    {key:"ashore",label:"+ Ashore by",       mins:30,   from:"start", hard:false, text:() => "Ashore by"},
+    {key:"back",  label:"+ Back at the gangway", mins:-45, from:"end", hard:false, text:() => "Back at the gangway"},
+    {key:"shuttle",label:"+ Last shuttle",   mins:-60,  from:"end",   hard:true,  text:() => "Last port shuttle"},
+  ]
 };
 
-document.querySelectorAll("#cuePresets button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const key = btn.dataset.cue, pre = CUE_PRESETS[key];
-    const base = parse(pre.after ? $("#f_end").value : $("#f_start").value);
-    let at = "";
-    if(base && key !== "blank"){
-      at = stamp(new Date(base.getTime() + pre.mins*60000));
-    } else if(key !== "blank"){
-      toast(pre.after ? "Set the arrival time first" : "Set the departure time first");
-      return;
-    }
-    const r = cueRowEditor({label: pre.label($("#f_from").value.trim(), $("#f_mode").value), at: at});
-    r.querySelector(key === "blank" ? ".cl" : ".ct").focus();
-  });
-});
+function buildPresets(k){
+  const box = $("#cuePresets");
+  box.innerHTML = "";
+  (CUE_PRESETS[k] || []).concat([{key:"blank", label:"+ Custom", mins:0, from:"start", hard:false, text:() => ""}])
+    .forEach(pre => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = pre.label;
+      b.addEventListener("click", () => addPreset(pre));
+      box.appendChild(b);
+    });
+}
+
+function addPreset(pre){
+  let at = "";
+  if(pre.key !== "blank"){
+    const base = parse(pre.from === "end" ? $("#f_end").value : $("#f_start").value);
+    if(!base){ toast(pre.from === "end" ? "Set the end time first" : "Set the start time first"); return; }
+    at = stamp(new Date(base.getTime() + pre.mins*60000));
+  }
+  const r = cueRowEditor({label: pre.text($("#f_from").value.trim(), $("#f_mode").value), at: at, hard: !!pre.hard});
+  r.querySelector(pre.key === "blank" ? ".cl" : ".ct").focus();
+}
 
 function commit(){
   const d = collect();
@@ -1383,6 +1598,7 @@ function absorb(list){
     if(map[c.parent]) c.parent = map[c.parent];
     else if(!entryById(c.parent)) c.parent = null;
   });
+  copies.forEach(classify);
   store.trips.push.apply(store.trips, copies);
   return {roots: copies.filter(c => !c.parent), attached: copies.filter(c => c.parent)};
 }
@@ -1427,6 +1643,7 @@ $("#fileIn").addEventListener("change", e => {
         if(t.parent === undefined) t.parent = null;
         if(t.active === undefined) t.active = true;
         t.legs.forEach(l => { if(!l.id) l.id = uid(); if(!l.kind) l.kind = "move"; });
+        classify(t);
       });
       if(!tops().length){ const t = newTrip("Restored trip"); store.trips.push(t); }
       if(!tops().some(t => t.id === store.active)) store.active = tops()[0].id;
