@@ -39,6 +39,15 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #tripBtn .n::after{content:" ⌄"; color:var(--tx3); font-weight:400}
   #tripSub{font-size:12.5px; color:var(--tx3); margin-top:2px; display:block; line-height:1.35}
+  .crumb{display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--stay); font-weight:700;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #upBtn{font-size:22px; padding-bottom:3px}
+  .plans{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+  .plans button{
+    display:inline-flex; align-items:center; gap:6px; background:#241f3d; border:1px solid #3f3668;
+    color:#c3b0ff; border-radius:9px; padding:6px 10px; font:620 12.5px inherit; font-family:inherit; text-align:left;
+  }
+  .plans .alt{background:none; border-style:dashed; color:var(--tx3)}
   .iconbtn{
     width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
     background:var(--bg2); color:var(--tx2); font-size:17px; line-height:1;
@@ -148,7 +157,8 @@
   .portrow.done{opacity:.58}
   .portrow .pn{font-size:14.5px; font-weight:680; letter-spacing:-.01em}
   .portrow .ps{font-size:12px; color:var(--tx3); font-variant-numeric:tabular-nums}
-  .portrow button{
+  .portrow .plans{flex:1 1 100%; margin-top:7px}
+  .portrow > button[data-edit]{
     margin-left:auto; background:none; border:1px solid var(--line); color:var(--tx3);
     border-radius:8px; padding:3px 9px; font-size:12px; font-family:inherit; font-weight:600;
   }
@@ -261,7 +271,9 @@
 <body>
 
 <header>
+  <button class="iconbtn" id="upBtn" aria-label="Back" hidden>‹</button>
   <button id="tripBtn">
+    <span class="crumb" id="crumb" hidden></span>
     <span class="n" id="tripName">My trip</span>
     <span id="tripSub"></span>
   </button>
@@ -358,12 +370,13 @@
     <button class="btn primary" id="saveBtn">Save</button>
   </div>
   <div class="actions" id="againRow"><button class="btn" id="againBtn">Save and add another</button></div>
+  <div class="actions" id="plansRow" hidden><button class="btn" id="plansBtn">Plans for this entry…</button></div>
 </div>
 
 <!-- Trips -->
 <div class="sheet" id="trips">
   <div class="grab"></div>
-  <h2>Itineraries</h2>
+  <h2 id="tripsTitle">Itineraries</h2>
   <div id="tripList"></div>
   <div class="actions">
     <button class="btn" id="tripsClose">Close</button>
@@ -377,8 +390,9 @@
   <h2>Options</h2>
   <button class="menuitem" id="mRate">Conversion rate<small id="rateNow"></small></button>
   <button class="menuitem" id="mText">Copy this itinerary as text<small>Plain text for a message or email</small></button>
-  <button class="menuitem" id="mExport">Export backup<small>All itineraries, as a .json file</small></button>
-  <button class="menuitem" id="mImport">Restore from backup<small>Replaces everything in the app</small></button>
+  <button class="menuitem" id="mShare">Export this itinerary<small>Just this one, with its plans — for sharing or moving</small></button>
+  <button class="menuitem" id="mExport">Export full backup<small>Everything, as a .json file</small></button>
+  <button class="menuitem" id="mImport">Import a file<small>A shared itinerary is added; a full backup replaces everything</small></button>
   <button class="menuitem red" id="mClear">Clear this itinerary<small>Deletes its entries — cannot be undone</small></button>
   <div class="ver" id="verLine"></div>
   <div class="actions"><button class="btn" id="menuClose">Close</button></div>
@@ -390,7 +404,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = s => document.querySelector(s);
@@ -400,7 +414,7 @@ const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36
 let store = null;
 
 function blank(){ return {v:2, active:null, rate:{GBP:1, EUR:0.86, USD:0.79, CHF:0.88}, trips:[]}; }
-function newTrip(name){ return {id:uid(), name:name||"New itinerary", legs:[]}; }
+function newTrip(name, parent){ return {id:uid(), name:name||"New itinerary", legs:[], parent:parent||null, active:true}; }
 
 try{
   const raw = localStorage.getItem(KEY);
@@ -451,14 +465,32 @@ store.trips.forEach(t => {
   });
 });
 if(migrated) try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){}
-if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
+store.trips.forEach(t => { if(t.parent === undefined) t.parent = null; if(t.active === undefined) t.active = true; });
+const tops = () => store.trips.filter(t => !t.parent);
+if(!tops().length){ const t = newTrip("My trip"); store.trips.push(t); store.active = t.id; }
+if(!tops().some(t => t.id === store.active)) store.active = tops()[0].id;
+
+/* ---- where we are ---- */
+const byId = id => store.trips.find(t => t.id === id) || null;
+const kids = entryId => store.trips.filter(t => t.parent === entryId);
+const livePlan = entryId => kids(entryId).find(t => t.active) || kids(entryId)[0] || null;
+const entryById = id => { for(const t of store.trips){ const l = t.legs.find(z => z.id === id); if(l) return {itin:t, leg:l}; } return null; };
+function chain(itin){                       // breadcrumb, outermost first
+  const out = []; let cur = itin, guard = 0;
+  while(cur && guard++ < 8){ out.unshift(cur); cur = cur.parent ? (entryById(cur.parent)||{}).itin : null; }
+  return out;
+}
 
 let storageOK = true;
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(store)); }
   catch(e){ if(storageOK){ storageOK = false; toast("Couldn't save — storage is blocked here"); } }
 }
-const trip = () => store.trips.find(t => t.id === store.active) || store.trips[0];
+// the itinerary on screen — a top-level trip, or a plan we've drilled into
+function trip(){
+  return byId(store.viewing) || byId(store.active) || tops()[0];
+}
+function goTo(id){ store.viewing = id; save(); render(); }
 
 /* ---------- helpers ---------- */
 function parse(s){
@@ -490,15 +522,18 @@ const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<"
 const SYM = {GBP:"£", EUR:"€", USD:"$", CHF:"CHF "};
 const money = (n, c) => (SYM[c]||c+" ") + Number(n).toLocaleString("en-GB",{minimumFractionDigits:2, maximumFractionDigits:2});
 
-function totalsFor(t){
-  const by = {};
+function totalsFor(t, into){
+  const by = into || {};
+  if(!t) return by;
   t.legs.forEach(l => {
     const n = parseFloat(l.cost);
     if(!isNaN(n) && n > 0){ const c = l.ccy || "GBP"; by[c] = (by[c]||0) + n; }
+    const plan = livePlan(l.id);            // only the plan you've chosen counts
+    if(plan) totalsFor(plan, by);
   });
   return by;
 }
-const totalsText = t => Object.keys(totalsFor(t)).map(c => money(totalsFor(t)[c], c));
+function totalsText(t){ const by = totalsFor(t); return Object.keys(by).map(c => money(by[c], c)); }
 
 const MOVE_TYPES = ["Flight","Train","Cruise","Ferry","Coach","Bus","Taxi","Car","Tube / Metro","Walk","Transfer","Other"];
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
@@ -546,9 +581,32 @@ function sorted(){
 }
 
 /* ---------- render ---------- */
+let dodged = null;   // an entry you've backed out of, so we stop dragging you back in
+
+function autoDrop(){
+  const now = new Date();
+  let found = null;
+  store.trips.forEach(t => {
+    if(!t.parent || !t.active || found) return;
+    const h = entryById(t.parent); if(!h) return;
+    const s = parse(h.leg.start), e = parse(h.leg.end);
+    if(s && e && now >= s && now <= e) found = {plan:t, hostLeg:h.leg};
+  });
+  if(!found){ dodged = null; return false; }
+  if(trip().id === found.plan.id) return false;
+  if(dodged === found.hostLeg.id) return false;
+  store.viewing = found.plan.id;
+  return true;
+}
+
 function render(){
+  if(autoDrop()){ render(); return; }
   const t = trip();
   $("#tripName").textContent = t.name;
+  const path = chain(t);
+  $("#upBtn").hidden = path.length < 2;
+  $("#crumb").textContent = path.length > 1 ? path.slice(0, -1).map(z => z.name).join(" › ") : "";
+  $("#crumb").hidden = path.length < 2;
   const all = sorted();
   $("#empty").hidden = all.length > 0;
   const list = $("#list"); list.innerHTML = "";
@@ -778,10 +836,36 @@ function anchor(it, now){
   if(boarding && links.length) h += '<div class="links">'+links.map(a =>
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
+  h += planChips(l);
   h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
   el.innerHTML = h;
   el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  wirePlans(el, l);
   return el;
+}
+
+// "▸ Version A · 6 steps" — the way into a nested day
+function planChips(l){
+  const ks = kids(l.id);
+  if(!ks.length) return "";
+  const live = livePlan(l.id);
+  const other = ks.length - 1;
+  return '<div class="plans"><button data-plan="'+live.id+'">▸ '+esc(live.name)+esc(summarise(live))+'</button>'+
+    (other > 0 ? '<button class="alt" data-alts="'+l.id+'">'+other+(other===1?" alternative":" alternatives")+'</button>' : '')+
+    '</div>';
+}
+function summarise(plan){
+  const n = plan.legs.length;
+  if(!n) return " · empty";
+  const by = totalsFor(plan);
+  const cash = Object.keys(by).map(c => money(by[c], c)).join(" · ");
+  return " · " + n + (n===1?" step":" steps") + (cash ? " · " + cash : "");
+}
+function wirePlans(el, l){
+  const go = el.querySelector("[data-plan]");
+  if(go) go.addEventListener("click", () => goTo(go.dataset.plan));
+  const alt = el.querySelector("[data-alts]");
+  if(alt) alt.addEventListener("click", () => { planHost = l.id; renderTrips(); show("#trips"); });
 }
 
 /* fare plus everything booked inside the span */
@@ -809,8 +893,9 @@ function portRow(x, now){
   if(!isNaN(c) && c > 0) sub.push(money(c, l.ccy||"GBP"));
   el.innerHTML = '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
                  (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
-                 '<button data-edit="'+l.id+'">Edit</button>';
+                 '<button data-edit="'+l.id+'">Edit</button>' + planChips(l);
   el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  wirePlans(el, l);
   return el;
 }
 
@@ -868,10 +953,36 @@ function card(x, now){
   if(links.length) h += '<div class="links">'+links.map(a =>
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
+  h += planChips(l);
   h += '<div class="rowbtns"><button data-edit="'+l.id+'">Edit</button></div></div>';
   el.innerHTML = h;
   el.querySelector("[data-edit]").addEventListener("click", () => openSheet(l.id));
+  wirePlans(el, l);
   return el;
+}
+
+// "▸ Version A · 6 steps" — the way into a nested day
+function planChips(l){
+  const ks = kids(l.id);
+  if(!ks.length) return "";
+  const live = livePlan(l.id);
+  const other = ks.length - 1;
+  return '<div class="plans"><button data-plan="'+live.id+'">▸ '+esc(live.name)+esc(summarise(live))+'</button>'+
+    (other > 0 ? '<button class="alt" data-alts="'+l.id+'">'+other+(other===1?" alternative":" alternatives")+'</button>' : '')+
+    '</div>';
+}
+function summarise(plan){
+  const n = plan.legs.length;
+  if(!n) return " · empty";
+  const by = totalsFor(plan);
+  const cash = Object.keys(by).map(c => money(by[c], c)).join(" · ");
+  return " · " + n + (n===1?" step":" steps") + (cash ? " · " + cash : "");
+}
+function wirePlans(el, l){
+  const go = el.querySelector("[data-plan]");
+  if(go) go.addEventListener("click", () => goTo(go.dataset.plan));
+  const alt = el.querySelector("[data-alts]");
+  if(alt) alt.addEventListener("click", () => { planHost = l.id; renderTrips(); show("#trips"); });
 }
 
 /* ---------- entry sheet ---------- */
@@ -947,6 +1058,7 @@ function openSheet(id){
   ((l && l.links) || []).forEach(a => linkRow(a.label, a.url));
   $("#delBtn").hidden = !l;
   $("#againRow").hidden = !!l;
+  $("#plansRow").hidden = !l;
   syncEnd(true);
   show("#sheet");
 }
@@ -1023,27 +1135,42 @@ function toast(msg){
 }
 
 /* ---------- trips sheet ---------- */
+let planHost = null;      // when set, the sheet is listing plans for that entry
+
 function renderTrips(){
   const box = $("#tripList"); box.innerHTML = "";
-  store.trips.forEach(t => {
+  const host = planHost ? entryById(planHost) : null;
+  const list = planHost ? kids(planHost) : tops();
+  $("#tripsTitle").textContent = host
+    ? "Plans for " + (host.leg.place || host.leg.to || host.leg.from || "this entry")
+    : "Itineraries";
+  $("#newTrip").textContent = planHost ? "New plan" : "New itinerary";
+
+  list.forEach(t => {
     const ds = t.legs.map(l => parse(l.start)).filter(Boolean).sort((a,b) => a-b);
     const totals = totalsText(t).join(" · ");
     const dates = ds.length
       ? ds[0].toLocaleDateString("en-GB",{day:"numeric",month:"short"}) +
         (dayKey(ds[0]) !== dayKey(ds[ds.length-1]) ? " – " + ds[ds.length-1].toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "")
       : "No dates yet";
+    const on = planHost ? !!t.active : (t.id === store.active);
     const row = document.createElement("div");
-    row.className = "triprow" + (t.id === store.active ? " active" : "");
-    row.innerHTML = '<button>'+esc(t.name)+'<small>'+esc(dates)+' · '+t.legs.length+
+    row.className = "triprow" + (on ? " active" : "");
+    row.innerHTML = '<button>'+(planHost && on ? "✓ " : "")+esc(t.name)+'<small>'+esc(dates)+' · '+t.legs.length+
       (t.legs.length===1?" entry":" entries")+(totals? " · "+esc(totals):"")+'</small></button>'+
       '<button class="more" aria-label="Options">•••</button>';
     const [open, more] = row.querySelectorAll("button");
-    open.addEventListener("click", () => { store.active = t.id; save(); render(); hideAll(); });
+    open.addEventListener("click", () => {
+      if(planHost){ kids(planHost).forEach(k => k.active = (k.id === t.id)); }
+      else { store.active = t.id; }
+      store.viewing = t.id;
+      planHost = null;
+      save(); render(); hideAll();
+    });
     more.addEventListener("click", () => tripActions(t));
     box.appendChild(row);
   });
 }
-
 function tripActions(t){
   const a = prompt('"'+t.name+'"\n\nType:  R = rename,  D = duplicate,  X = delete', "R");
   if(!a) return;
@@ -1052,16 +1179,33 @@ function tripActions(t){
     const n = prompt("New name", t.name);
     if(n && n.trim()){ t.name = n.trim(); save(); render(); renderTrips(); }
   } else if(c === "D"){
-    const copy = {id:uid(), name:t.name+" (copy)", legs:t.legs.map(l => Object.assign({}, l, {id:uid()}))};
-    store.trips.push(copy); save(); renderTrips(); toast("Duplicated");
+    cloneInto(t, t.parent, t.name + " (copy)", false);
+    save(); render(); renderTrips(); toast("Duplicated");
   } else if(c === "X"){
-    if(store.trips.length === 1){ toast("That's your only itinerary"); return; }
-    if(!confirm('Delete "'+t.name+'" and all its entries?')) return;
-    store.trips = store.trips.filter(z => z.id !== t.id);
-    if(store.active === t.id) store.active = store.trips[0].id;
+    if(!t.parent && tops().length === 1){ toast("That's your only itinerary"); return; }
+    if(!confirm('Delete "'+t.name+'" and everything in it?')) return;
+    dropItinerary(t.id);
+    if(!byId(store.active)) store.active = tops()[0].id;
+    if(!byId(store.viewing)) store.viewing = store.active;
     save(); render(); renderTrips(); toast("Deleted");
   }
 }
+
+// copy an itinerary and everything nested under it, with fresh ids throughout
+function cloneInto(src, parent, name, makeActive){
+  const copy = {id:uid(), name:name || src.name, parent:parent || null, active:!!makeActive,
+                legs:src.legs.map(l => Object.assign({}, l, {id:uid()}))};
+  store.trips.push(copy);
+  src.legs.forEach((old, i) => kids(old.id).forEach(k => cloneInto(k, copy.legs[i].id, k.name, k.active)));
+  return copy;
+}
+
+function dropItinerary(id){
+  const t = byId(id); if(!t) return;
+  t.legs.forEach(l => kids(l.id).slice().forEach(k => dropItinerary(k.id)));
+  store.trips = store.trips.filter(z => z.id !== id);
+}
+
 
 /* ---------- events ---------- */
 $("#fab").addEventListener("click", () => openSheet(null));
@@ -1075,12 +1219,33 @@ $("#menuBtn").addEventListener("click", () => {
 });
 $("#menuClose").addEventListener("click", hideAll);
 $("#tripsClose").addEventListener("click", hideAll);
-$("#tripBtn").addEventListener("click", () => { renderTrips(); show("#trips"); });
+$("#plansBtn").addEventListener("click", () => {
+  if(!editing) return;
+  planHost = editing;
+  hideAll();
+  renderTrips(); show("#trips");
+});
+
+$("#tripBtn").addEventListener("click", () => {
+  const t = trip();
+  planHost = t.parent || null;
+  renderTrips(); show("#trips");
+});
+$("#upBtn").addEventListener("click", () => {
+  const t = trip();
+  const host = t.parent ? entryById(t.parent) : null;
+  if(host){ dodged = livePlan(t.parent) ? t.parent : null; goTo(host.itin.id); }
+});
 $("#newTrip").addEventListener("click", () => {
-  const n = prompt("Name this itinerary", "");
+  const host = planHost;
+  const n = prompt(host ? "Name this plan" : "Name this itinerary", "");
   if(n === null) return;
-  const t = newTrip(n.trim() || "New itinerary");
-  store.trips.push(t); store.active = t.id;
+  const t = newTrip(n.trim() || (host ? "New plan" : "New itinerary"), host);
+  if(host) kids(host).forEach(k => { if(k.id !== t.id) k.active = false; });
+  store.trips.push(t);
+  if(!host) store.active = t.id;
+  store.viewing = t.id;
+  planHost = null;
   save(); render(); hideAll(); toast("Created");
 });
 
@@ -1175,6 +1340,49 @@ $("#mRate").addEventListener("click", () => {
   save(); render(); hideAll(); toast("Rates saved");
 });
 
+// gather an itinerary and everything nested inside it
+function subtree(id, out){
+  out = out || [];
+  const t = byId(id); if(!t) return out;
+  out.push(t);
+  t.legs.forEach(l => kids(l.id).forEach(k => subtree(k.id, out)));
+  return out;
+}
+
+function download(obj, name){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+const slug = s => (s || "itinerary").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "itinerary";
+
+$("#mShare").addEventListener("click", () => {
+  const root = chain(trip())[0];                 // share the whole trip, not the plan you're standing in
+  download({format:"itinerary-share", v:1, rate:store.rate, itineraries:subtree(root.id)},
+           slug(root.name) + ".json");
+  hideAll(); toast("Exported " + root.name);
+});
+
+// bring in a shared itinerary alongside what's already here, with fresh ids
+function absorb(list){
+  const map = {};
+  const copies = list.map(t => {
+    const c = {id:uid(), name:t.name, parent:t.parent || null, active:t.active !== false,
+               legs:(t.legs||[]).map(l => { const n = Object.assign({}, l, {id:uid()}); map[l.id] = n.id; return n; })};
+    map[t.id] = c.id;
+    return c;
+  });
+  copies.forEach(c => { if(c.parent) c.parent = map[c.parent] || null; });
+  store.trips.push.apply(store.trips, copies);
+  const roots = copies.filter(c => !c.parent);
+  roots.forEach(r => { r.parent = null; });
+  return roots;
+}
+
 $("#mExport").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(store,null,2)], {type:"application/json"});
   const a = document.createElement("a");
@@ -1192,6 +1400,14 @@ $("#fileIn").addEventListener("change", e => {
   r.onload = () => {
     try{
       const p = JSON.parse(r.result);
+      if(p && p.format === "itinerary-share" && Array.isArray(p.itineraries)){
+        const roots = absorb(p.itineraries);
+        if(!roots.length) throw 0;
+        store.active = roots[0].id; store.viewing = roots[0].id;
+        save(); render(); hideAll();
+        toast("Added " + roots[0].name);
+        return;
+      }
       if(p && Array.isArray(p.trips)){
         store = p;
         if(!store.rate) store.rate = {GBP:1, EUR:0.86, USD:0.79, CHF:0.88};
@@ -1200,8 +1416,15 @@ $("#fileIn").addEventListener("change", e => {
         t.legs = p.legs.map(l => Object.assign({kind:"move", cost:null, ccy:"GBP"}, l));
         store = blank(); store.trips = [t];
       } else throw 0;
-      store.trips.forEach(t => { if(!t.id) t.id = uid(); t.legs.forEach(l => { if(!l.id) l.id = uid(); if(!l.kind) l.kind = "move"; }); });
-      if(!store.trips.some(t => t.id === store.active)) store.active = store.trips[0].id;
+      store.trips.forEach(t => {
+        if(!t.id) t.id = uid();
+        if(t.parent === undefined) t.parent = null;
+        if(t.active === undefined) t.active = true;
+        t.legs.forEach(l => { if(!l.id) l.id = uid(); if(!l.kind) l.kind = "move"; });
+      });
+      if(!tops().length){ const t = newTrip("Restored trip"); store.trips.push(t); }
+      if(!tops().some(t => t.id === store.active)) store.active = tops()[0].id;
+      store.viewing = store.active;
       save(); render(); hideAll(); toast("Restored " + store.trips.length + " itineraries");
     }catch(err){ toast("That file didn't look right"); }
   };
