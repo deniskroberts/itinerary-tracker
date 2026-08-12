@@ -133,6 +133,7 @@
   .chip.money{background:#152a20; border-color:#25452f; color:#7fdcae; font-variant-numeric:tabular-nums}
   .chip.done{background:#152a20; border-color:#25452f; color:#6fc79b}
   .chip.todo{background:none; border-style:dashed; color:var(--tx3)}
+  .chip.svc{background:#1b2733; border-color:#2c3d51; color:#9fd4ff; font-weight:700}
   .chip.crit{background:#3a1f22; border-color:#5e2f33; color:#ff9b9b; font-weight:700}
   .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
@@ -192,10 +193,7 @@
   .portrow .ps{font-size:12px; color:var(--tx3); font-variant-numeric:tabular-nums}
   .portrow .plans{flex:1 1 100%; margin-top:7px}
   .portrow .links{flex:1 1 100%; margin-top:7px}
-  .portrow > button[data-edit]{
-    margin-left:auto; background:none; border:1px solid var(--line); color:var(--tx3);
-    border-radius:8px; padding:3px 9px; font-size:12px; font-family:inherit; font-weight:600;
-  }
+  .portrow .rowbtns{flex:1 1 100%}
 
   .gap{
     display:flex; align-items:center; margin:4px 0;
@@ -233,7 +231,7 @@
     background:#2a2210; border:1px solid #5a4718; border-radius:10px;
     padding:9px 11px; font-size:12.5px; color:#e6c463; font-weight:620;
   }
-  .pretend span{flex:1 1 auto; min-width:0}
+  .pretend .pw{flex:1 1 auto; min-width:0; text-align:left; padding:4px 0; border:0; font-weight:700}
   .pretend button{
     background:none; border:1px solid #5a4718; color:#e6c463;
     border-radius:8px; padding:4px 10px; font-size:12px; font-family:inherit; font-weight:640;
@@ -494,6 +492,9 @@
     <button type="button" data-st="checkedIn">Checked in</button>
   </div>
 
+  <label for="f_service" id="lblService">Which service <span class="opt">(optional)</span></label>
+  <input id="f_service" placeholder="FR9014" autocomplete="off">
+
   <label for="f_ref">Reference / seat / room <span class="opt">(optional)</span></label>
   <input id="f_ref" placeholder="Coach 12, seat 34 · BK7Y2P" autocomplete="off">
 
@@ -534,13 +535,18 @@
   </div>
 </div>
 
-<!-- What if I'm late -->
-<div class="sheet" id="ripple">
+<!-- Rehearsal clock -->
+<div class="sheet" id="pretend">
   <div class="grab"></div>
-  <h2>If you're running late</h2>
-  <div class="seg small" id="lateRow"></div>
-  <div id="rippleBody"></div>
-  <div class="actions"><button class="btn" id="rippleClose">Close</button></div>
+  <h2>Rehearse a moment</h2>
+  <label for="f_pretend">Pretend the time is</label>
+  <input id="f_pretend" type="datetime-local">
+  <div class="hint">Everything moves to this moment. Ticks on things that haven't
+    really happened are undone when you come back to now.</div>
+  <div class="actions">
+    <button class="btn" id="pretendNow">Back to now</button>
+    <button class="btn primary" id="pretendSave">Rehearse</button>
+  </div>
 </div>
 
 <!-- Ticking a thing off -->
@@ -587,10 +593,10 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "5.0";
+const APP_VERSION = "6.0";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
-const $ = s => document.querySelector(s);
+const $ = (s, root) => (root || document).querySelector(s);
 
 /* ---------- store ---------- */
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
@@ -623,7 +629,7 @@ if(!store.trips.length){ const t = newTrip("My trip"); store.trips.push(t); stor
 // v1.5: port calls that used to live inside a journey become entries in their own right
 // a cue is either their deadline or your buffer; guess once from the wording,
 // erring towards "yours" so nothing starts out nagging you
-const SEED_FIXED = {Flight:1, Cruise:1, Ferry:1};
+const SEED_FIXED = {Flight:1, Cruise:1};
 
 function classify(t){
   let touched = false;
@@ -871,9 +877,16 @@ function render(){
   if(pretending()){
     const w = document.createElement("div");
     w.className = "pretend";
-    w.innerHTML = '<span>⏱ Rehearsing '+esc(short(now))+', '+hhmm(now)+'</span>'+
-                  '<button type="button" id="stopPretend">Back to now</button>';
-    w.querySelector("button").addEventListener("click", backToNow);
+    w.innerHTML = '<button type="button" class="pw" id="setPretend">⏱ Rehearsing '+
+                    esc(short(now))+', '+hhmm(now)+'</button>'+
+                  '<button type="button" data-step="-60">−1h</button>'+
+                  '<button type="button" data-step="60">+1h</button>'+
+                  '<button type="button" id="stopPretend">Now</button>';
+    $("#stopPretend", w).addEventListener("click", backToNow);
+    $("#setPretend", w).addEventListener("click", () => { hideAll(); openPretend(); });
+    w.querySelectorAll("[data-step]").forEach(b => b.addEventListener("click", () => {
+      setPretend(new Date(NOW().getTime() + (+b.dataset.step)*60000));
+    }));
     list.appendChild(w);
   }
 
@@ -1161,8 +1174,9 @@ function unitOf(card, before, after, nested){
 const beforeCue = x => cueBand(x, "before");
 const afterCue  = x => cueBand(x, "after");
 
-/* UNFORGIVING = missing it can't be undone. Trains and buses run again. */
-const UNFORGIVING = {Flight:1, Cruise:1, Ferry:1};
+/* UNFORGIVING = there is no replacement at any price. A ferry ticket names a
+   sailing, but another one leaves later — that's the ticket, not the trip. */
+const UNFORGIVING = {Flight:1, Cruise:1};
 function unforgiving(x){
   if(onlyOne(x.l)) return true;
   if(cueList(x).some(z => z.kind === "deadline")) return true;
@@ -1311,32 +1325,6 @@ function lateLine(L){
   return (redo || alert) ? {redo:redo, alert:alert} : null;
 }
 
-function renderRipple(){
-  const box = $("#rippleBody");
-  const x = sorted().find(z => z.l.id === lateId);
-  if(!x){ box.textContent = ""; return; }
-  const r = ripple(x, lateMins, sorted());
-  let h = '<div class="rhead">Running ' + dur(lateMins) + ' late from ' + esc(titleOf(x)) + '</div>';
-  h += r.steps.map(s => {
-    const name = esc(titleOf(s.y)) + ' ' + hhmm(s.y.s);
-    if(s.state === "clear")   return '<div class="rstep ok">✓ ' + name + ' — still fine, ' + dur(s.by) + ' to spare' + inside(s) + '</div>';
-    if(s.state === "shifted") return '<div class="rstep">· ' + name + ' — starts ' + dur(s.late) + ' late' + inside(s) + '</div>';
-    if(s.state === "missed"){
-      return '<div class="rstep warn">⚠ ' + name + ' — missed by ' + dur(s.late) +
-        ", you'd be on the " + hhmm(s.board) + (s.est ? " (est)" : "") +
-        (s.lastAt ? (Math.abs(s.board - s.lastAt) < 60000 ? ", the last one"
-                                                          : ' · last ' + hhmm(s.lastAt)) : '') + inside(s) + '</div>';
-    }
-    return '<div class="rstep bad">✗ ' + name + ' — missed by ' + dur(s.late) +
-      (s.why ? ' (' + esc(s.why) + ')' : '') + '</div>';
-  }).join("");
-  h += '<div class="rverdict">' + (
-    r.verdict === "absorbed" ? "Absorbed. Nothing after this is affected." :
-    r.verdict === "broken"   ? "Stops at " + esc(titleOf(r.at)) + "." :
-    "Still " + dur(r.spare) + " behind at the end of what's planned.") + '</div>';
-  box.innerHTML = h;
-}
-
 /* ---------- what today's programme still owes you ---------- */
 
 /* The port you're about to go ashore in, if it still needs squaring away.
@@ -1379,6 +1367,16 @@ let tickId = null;
 
 /* Leaving rehearsal, anything ticked that hasn't actually happened yet is a
    rehearsal artefact, not a record. Ticks on things already past are kept. */
+function setPretend(d){
+  const g = SET().misc || (SET().misc = {});
+  g.pretend = localISO(roundMin(d));
+  save(); render();
+}
+function openPretend(){
+  $("#f_pretend").value = opt("misc", "pretend", "") || localISO(roundMin(NOW()));
+  show("#pretend");
+}
+
 function backToNow(){
   const g = SET().misc || (SET().misc = {});
   delete g.pretend;
@@ -1405,8 +1403,6 @@ function slipOf(l, mode){
   const at = parse(l[t.field]), planned = t.planned(l);
   return (at && planned) ? mins(at - planned) : null;
 }
-const slipText = sl => sl == null ? "" :
-  sl > 0 ? dur(sl) + " late" : sl < 0 ? dur(-sl) + " early" : "on time";
 
 let tickMode = "";
 function tapTick(id, mode){
@@ -1436,28 +1432,6 @@ function openTick(id, mode){
   $("#tickSlip").textContent = sl == null ? "" : sl === 0 ? "Exactly as planned" :
     dur(Math.abs(sl)) + (sl > 0 ? " later" : " earlier") + " than planned";
   hideAll(); show("#tick");
-}
-
-let lateId = null, lateMins = 30;
-function openRipple(id){
-  lateId = id;
-  const steps = String(opt("misc", "rippleSteps", "15,30,45,60,120")).split(/[ ,]+/)
-    .map(n => parseInt(n, 10)).filter(n => n > 0);
-  const row = $("#lateRow"); row.innerHTML = "";
-  steps.forEach(m => {
-    const b = document.createElement("button");
-    b.type = "button"; b.dataset.late = m; b.textContent = dur(m);
-    b.addEventListener("click", () => {
-      lateMins = m;
-      row.querySelectorAll("button").forEach(z => z.classList.toggle("on", z === b));
-      renderRipple();
-    });
-    row.appendChild(b);
-  });
-  if(steps.indexOf(lateMins) < 0) lateMins = steps[0] || 30;
-  row.querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.late === lateMins));
-  renderRipple();
-  show("#ripple");
 }
 
 // the later version of the same journey — not part of the plan, but it's what you'd fall back on
@@ -1513,7 +1487,10 @@ function statusChips(l){
   if(l.booked) out.push('<span class="chip done">booked</span>');
   if(l.paid) out.push('<span class="chip done">paid</span>');
   if(l.checkedIn) out.push('<span class="chip done">checked in</span>');
-  if(!l.booked) out.push('<span class="chip todo">not booked</span>');
+  // only say "to book" where you've recorded money — you don't pay for a walk,
+  // and a tender isn't bookable at all
+  const c = parseFloat(l.cost);
+  if(!l.booked && !isNaN(c) && c > 0) out.push('<span class="chip todo">to book</span>');
   return out;
 }
 
@@ -1548,17 +1525,17 @@ function anchor(it, now){
   h += '<div class="route">'+esc(where)+'</div>';
 
   const bits = ['<span class="chip">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>'];
-  if(boarding) statusChips(l).forEach(c => bits.push(c));
   if(boarding){
     const c = parseFloat(l.cost);
     if(!isNaN(c) && c > 0) bits.push('<span class="chip money">'+money(c, l.ccy||"GBP")+'</span>');
     const on = startOf(x), off = endOf(x);
     if(on && off) bits.push('<span>'+dur(mins(off - on))+' aboard</span>');
     if(onlyOne(l)) bits.push('<span class="chip crit">only one</span>');
-  if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
-  if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
-  statusChips(l).forEach(c => bits.push(c));
-  if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
+    if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
+    if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
+    statusChips(l).forEach(c => bits.push(c));
+    if(l.service) bits.push('<span class="chip svc">'+esc(l.service)+'</span>');
+    if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   } else {
     const roll = spanTotals(it.span);
     Object.keys(roll).forEach(c => bits.push('<span class="chip money">'+money(roll[c], c)+' all in</span>'));
@@ -1571,7 +1548,7 @@ function anchor(it, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns">'+rowBtns(l, boarding ? "board" : "off")+'</div></div>';
+  h += '<div class="rowbtns">'+rowBtns(l, boarding ? "board" : "off", x)+'</div></div>';
   el.innerHTML = h;
   wireBtns(el, l);
   wirePlans(el, l);
@@ -1587,19 +1564,25 @@ const TICK = {
   "board": {field:"doneAt",    planned: l => parse(l.start)},
   "off":   {field:"offDoneAt", planned: l => parse(l.end)}
 };
-function rowBtns(l, mode){
+/* The tick is a toggle, nothing more — the time it recorded lives in the
+   gutter with every other time on the card. Ticking is a thing you do on the
+   day, so the button only appears on the day. */
+function rowBtns(l, mode, x){
   mode = mode || "";
   const at = parse(l[TICK[mode].field]);
+  const show = at || onItsDay(l, mode, x);
   const held = !at && blockedBy(l);
-  return '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
+  return (show ? '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
          (at ? " on" : held ? " held" : "")+'">'+
-         (at ? "✓ " + hhmm(at) : held ? "🔒 Done" : "Done") + '</button>'+
-         '<button data-edit="'+l.id+'">Edit</button>'+
-         '<button data-late="'+l.id+'">Late?</button>';
+         (at ? "✓ Done" : held ? "🔒 Done" : "Done") + '</button>' : '')+
+         '<button data-edit="'+l.id+'">Edit</button>';
 }
+const onItsDay = (l, mode, x) => {
+  const when = (mode === "off") ? parse(l.end) : parse(l.start) || parse(l.end);
+  return !!(when && dayKey(when) === dayKey(NOW()));
+};
 function wireBtns(el, l){
   const e = el.querySelector("[data-edit]"); if(e) e.addEventListener("click", () => openSheet(l.id));
-  const r = el.querySelector("[data-late]"); if(r) r.addEventListener("click", () => openRipple(l.id));
   const t = el.querySelector("[data-tick]");
   if(t) t.addEventListener("click", () => tapTick(l.id, t.dataset.mode || ""));
 }
@@ -1609,10 +1592,11 @@ function planChips(l){
   const ks = kids(l.id);
   if(!ks.length) return "";
   const live = livePlan(l.id);
-  const other = ks.length - 1;
-  return '<div class="plans"><button data-plan="'+live.id+'">▸ '+esc(live.name)+esc(summarise(live))+'</button>'+
-    (other > 0 ? '<button class="alt" data-alts="'+l.id+'">'+other+(other===1?" alternative":" alternatives")+'</button>' : '')+
-    '</div>';
+  // every plan says its own name; the live one is filled in, the rest outlined
+  const order = ks.slice().sort((a, b) => (a.id === live.id ? -1 : b.id === live.id ? 1 : 0));
+  return '<div class="plans">' + order.map(p => p.id === live.id
+      ? '<button data-plan="'+p.id+'">▸ '+esc(p.name)+esc(summarise(p))+'</button>'
+      : '<button class="alt" data-pick="'+p.id+'">'+esc(p.name)+'</button>').join("") + '</div>';
 }
 function summarise(plan){
   const n = plan.legs.length;
@@ -1624,8 +1608,11 @@ function summarise(plan){
 function wirePlans(el, l){
   const go = el.querySelector("[data-plan]");
   if(go) go.addEventListener("click", () => goTo(go.dataset.plan));
-  const alt = el.querySelector("[data-alts]");
-  if(alt) alt.addEventListener("click", () => { planHost = l.id; renderTrips(); show("#trips"); });
+  el.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
+    kids(l.id).forEach(p => p.active = (p.id === b.dataset.pick));
+    save(); render();
+    toast("Switched to " + (byId(b.dataset.pick) || {}).name);
+  }));
 }
 
 /* fare plus everything booked inside the span */
@@ -1653,9 +1640,10 @@ function portRow(x, now){
   el.innerHTML = '<span class="pt">'+(x.s ? hhmm(x.s) : "—")+'</span>'+
                  '<div class="pn">⚓ '+esc(l.place || "Port call")+'</div>'+
                  (sub.length ? '<div class="ps">'+esc(sub.join(" · "))+'</div>' : '')+
-                 '<button data-edit="'+l.id+'">Edit</button>' + planChips(l) +
+                 planChips(l) +
                  (l.agent ? '<div class="links"><a href="tel:'+esc(l.agent.replace(/\s+/g,""))+
                             '">☎ '+esc(l.agent)+'</a></div>' : '') +
+                 '<div class="rowbtns">'+rowBtns(l, "", x)+'</div>' +
                  (x.e ? '<div class="endrow"><span class="t">'+hhmm(x.e)+'</span><span class="d">'+
                         (dayKey(x.e) !== dayKey(x.s) ? short(x.e)+" · " : "") + "sails" +
                         (by ? ", all aboard " + hhmm(by) : "") + '</span></div>' : '');
@@ -1668,14 +1656,14 @@ function renderTotals(){
   const byC = totalsFor(trip());
   const keys = Object.keys(byC);
   const el = $("#totals");
-  if(keys.length < 2){ el.hidden = true; return; }   // single currency already shown in the header
-  el.hidden = false;
-  let h = '<span class="k">Total booked</span>' +
-          keys.map(c => '<span class="v">'+money(byC[c], c)+'</span>').join("");
+  // the figures themselves are in the header; the only thing left to add is
+  // what they come to together
+  if(keys.length < 2){ el.hidden = true; return; }
   let gbp = 0, ok = true;
   keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
-  if(ok) h += '<span class="approx">≈ '+money(gbp,"GBP")+' combined, at your saved rates</span>';
-  el.innerHTML = h;
+  el.hidden = !ok;
+  if(ok) el.innerHTML = '<span class="k">Combined</span><span class="v">'+money(gbp,"GBP")+
+                        '</span><span class="approx">at your saved rates</span>';
 }
 
 function card(x, now){
@@ -1703,6 +1691,7 @@ function card(x, now){
   if(l.fixed && !UNFORGIVING[l.mode]) bits.push('<span class="chip ship">fixed</span>');
   if(!l.fixed && UNFORGIVING[l.mode]) bits.push('<span class="chip">flexible</span>');
   statusChips(l).forEach(c => bits.push(c));
+  if(l.service) bits.push('<span class="chip svc">'+esc(l.service)+'</span>');
   if(l.ref) bits.push('<span>'+esc(l.ref)+'</span>');
   h += '<div class="meta">'+bits.join("")+'</div>';
 
@@ -1713,7 +1702,7 @@ function card(x, now){
     '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>').join("")+'</div>';
 
   h += planChips(l);
-  h += '<div class="rowbtns">'+rowBtns(l)+'</div></div>';
+  h += '<div class="rowbtns">'+rowBtns(l, "", x)+'</div></div>';
   if(x.e){
     let tail = "";
     if(stop && !sameDay){
@@ -1739,28 +1728,6 @@ function card(x, now){
 }
 
 // "▸ Version A · 6 steps" — the way into a nested day
-function planChips(l){
-  const ks = kids(l.id);
-  if(!ks.length) return "";
-  const live = livePlan(l.id);
-  const other = ks.length - 1;
-  return '<div class="plans"><button data-plan="'+live.id+'">▸ '+esc(live.name)+esc(summarise(live))+'</button>'+
-    (other > 0 ? '<button class="alt" data-alts="'+l.id+'">'+other+(other===1?" alternative":" alternatives")+'</button>' : '')+
-    '</div>';
-}
-function summarise(plan){
-  const n = plan.legs.length;
-  if(!n) return " · empty";
-  const by = totalsFor(plan);
-  const cash = Object.keys(by).map(c => money(by[c], c)).join(" · ");
-  return " · " + n + (n===1?" step":" steps") + (cash ? " · " + cash : "");
-}
-function wirePlans(el, l){
-  const go = el.querySelector("[data-plan]");
-  if(go) go.addEventListener("click", () => goTo(go.dataset.plan));
-  const alt = el.querySelector("[data-alts]");
-  if(alt) alt.addEventListener("click", () => { planHost = l.id; renderTrips(); show("#trips"); });
-}
 
 /* ---------- entry sheet ---------- */
 let editing = null, kind = "move";
@@ -1778,6 +1745,7 @@ function setKind(k){
   $("#lblEnd").textContent   = k === "move" ? "Arrives" : k === "port" ? "Ship sails"   : "Ends / check out";
   $("#rowBoard").hidden = false;
   $("#rowFallback").hidden = k !== "move";
+  setServicePrompt();
   buildPresets(k);
   const types = k === "move" ? MOVE_TYPES : k === "port" ? PORT_TYPES : STOP_TYPES;
   const cur = $("#f_mode").value;
@@ -1854,6 +1822,21 @@ function setMiss(v){
   missMode = v;
   document.querySelectorAll("#missSeg button").forEach(b => b.classList.toggle("on", b.dataset.miss === v));
 }
+/* Every mode has a name for the thing you're actually on, and it's never the
+   booking reference: a ship, a flight number, a bus line, a train service. */
+const SERVICE_ASK = {
+  Cruise:["Ship", "Norwegian Epic"], Ferry:["Ferry or operator", "Alilauro 10:20"],
+  Flight:["Flight number", "FR9014"], Train:["Service or operator", "Southeastern 15:27"],
+  Bus:["Line", "Bus 15"], Coach:["Service", "FlixBus 004"],
+  "Tube / Metro":["Line", "Piccadilly"], Taxi:["Firm", "Uber"], Transfer:["Operator", "Hoppa"]
+};
+function setServicePrompt(){
+  const a = SERVICE_ASK[$("#f_mode").value] || ["Which service", ""];
+  $("#lblService").innerHTML = esc(a[0]) + ' <span class="opt">(optional)</span>';
+  $("#f_service").placeholder = a[1] || "";
+}
+$("#f_mode").addEventListener("change", setServicePrompt);
+
 function setStatus(l){
   document.querySelectorAll("#statusRow button").forEach(b =>
     b.classList.toggle("on", !!(l && l[b.dataset.st])));
@@ -1896,6 +1879,7 @@ function openSheet(id){
   setStatus(l);
   $("#cueRows").innerHTML = "";
   ((l && l.cues) || []).forEach(c => cueRowEditor(c));
+  $("#f_service").value = l ? (l.service || "") : "";
   $("#f_ref").value   = l ? (l.ref || "") : "";
   $("#f_notes").value = l ? (l.notes || "") : "";
   $("#linkRows").innerHTML = "";
@@ -1965,7 +1949,7 @@ function collect(){
     from:$("#f_from").value.trim(), to:$("#f_to").value.trim(), place:$("#f_place").value.trim(),
     start:$("#f_start").value, end:$("#f_end").value,
     cost: isNaN(c) ? null : c, ccy: $("#f_ccy").value,
-    ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
+    service:$("#f_service").value.trim(), ref:$("#f_ref").value.trim(), notes:$("#f_notes").value.trim(), links,
     aboard: kind === "port" ? $("#f_aboard").value : "",
     agent:  kind === "port" ? $("#f_agent").value.trim() : "",
     cues: readCues(),
@@ -2067,7 +2051,14 @@ $("#verLine").textContent = "Itinerary · version " + APP_VERSION;
 $("#menuBtn").addEventListener("click", () => show("#menu"));
 $("#menuClose").addEventListener("click", hideAll);
 $("#tripsClose").addEventListener("click", hideAll);
-$("#rippleClose").addEventListener("click", hideAll);
+
+$("#pretendSave").addEventListener("click", () => {
+  const v = $("#f_pretend").value;
+  if(!v){ toast("Pick a moment"); return; }
+  const g = SET().misc || (SET().misc = {});
+  g.pretend = v; save(); hideAll(); render();
+});
+$("#pretendNow").addEventListener("click", () => { hideAll(); backToNow(); });
 
 $("#tickSave").addEventListener("click", () => {
   const l = entryById(tickId); if(!l) return hideAll();
@@ -2320,7 +2311,6 @@ function renderSettings(){
   add(beh);
   add(setField("misc", "maxGap", 360, {name:"Ignore gaps longer than", dur:true}));
   add(setField("misc", "aboardBefore", 30, {name:"All aboard before sailing", dur:true}));
-  add(setField("misc", "rippleSteps", "15,30,45,60,120", {name:"Late-by steps", text:true}));
   add(setField("misc", "checkout", "10:00", {name:"Hotel check-out, next morning", text:true}));
 
   add(section("Rehearsal", "move the whole app to a moment, to walk a day through before you live it"));
