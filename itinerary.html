@@ -25,13 +25,15 @@
     padding-bottom:calc(96px + env(safe-area-inset-bottom));
     -webkit-text-size-adjust:100%;
   }
+  /* what you are looking at, and what is next, stay put; the plan scrolls under */
   header{
     position:sticky; top:0; z-index:20;
     padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-    background:rgba(11,16,23,.86); backdrop-filter:saturate(160%) blur(14px);
+    background:rgba(11,16,23,.92); backdrop-filter:saturate(160%) blur(14px);
     border-bottom:1px solid var(--line);
-    display:flex; align-items:center; gap:10px;
   }
+  header .hrow{display:flex; align-items:center; gap:10px}
+  header > #focus{max-width:640px; margin:11px auto 0}
   #tripBtn{
     flex:1; min-width:0; text-align:left; background:none; border:0; padding:0; color:var(--tx); font-family:inherit;
   }
@@ -56,7 +58,7 @@
   main{padding:14px 16px 0; max-width:640px; margin:0 auto}
 
   #focus{
-    border-radius:var(--r); padding:13px 15px; margin-bottom:12px;
+    border-radius:var(--r); padding:13px 15px;
     background:linear-gradient(150deg,#173049,#122031); border:1px solid #2b4a6b;
   }
   #focus .lab{font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:var(--accent); font-weight:700}
@@ -109,35 +111,39 @@
   .cline{display:flex; gap:12px; align-items:baseline; padding:3px 0 3px 13px;
     font-size:12.5px; line-height:1.35}
   .cline .t{flex:0 0 var(--gut); text-align:right; font-variant-numeric:tabular-nums; font-weight:650}
-  .cline .w{flex:1 1 auto; min-width:0}
+  .cline .k{flex:0 0 auto; text-transform:uppercase; letter-spacing:.06em; font-size:10px;
+    font-weight:750; opacity:.85}
+  .cline .w{flex:1 1 auto; min-width:0; opacity:.9}
   .cline.soft{color:#c3b0ff}
   .cline.hard{color:var(--warn)}
   .cline.hard .t{font-weight:750}
   .cline.conn{color:#7fb3dc}
   .cline.conn .t::before{content:"+"}
+  .cline.turn{color:#ffb27a}
   .body{flex:1; min-width:0}
   .route{font-size:16px; font-weight:620; letter-spacing:-.01em; word-break:break-word}
   .route .ar{color:var(--tx3); font-weight:400; margin:0 5px}
   .meta{font-size:12.5px; color:var(--tx3); margin-top:3px; display:flex; flex-wrap:wrap; gap:5px 9px; align-items:center}
+  /* A chip is a fact, so it is square and unbordered. Anything with a rounded
+     edge in this app can be pressed. */
   .chip{
-    background:var(--bg2); border:1px solid var(--line); border-radius:6px;
-    padding:1px 6px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
+    background:var(--bg2); border:0; border-radius:0;
+    padding:2px 7px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
   }
   .chip.state{
     text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:750;
     padding:2px 6px;
   }
   /* facts about the thing — one family, one colour */
-  .chip.fact{background:#1b2130; border-color:#2b3446; color:#a9b6cc}
+  .chip.fact{background:#222a3a; color:#aebbd1}
   .chip.fact.mode{text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:750}
   .chip.fact.money{font-variant-numeric:tabular-nums; font-weight:700}
   .chip.fact.svc{font-weight:700}
   /* where you've got to — a different family entirely */
-  .chip.done{background:#152a20; border-color:#25452f; color:#6fc79b}
-  .chip.todo{background:none; border-style:dashed; color:var(--tx3)}
+  .chip.done{background:#173026; color:#79d3a5}
+  .chip.todo{background:#2e2a18; color:#d0bd77}
   .meta.st{margin-top:4px}
-  .chip.crit{background:#3a1f22; border-color:#5e2f33; color:#ff9b9b; font-weight:700}
-  .chip.ship{background:#221f3a; border-color:#3a3560; color:#c3b0ff; font-variant-numeric:tabular-nums}
+  .chip.crit{background:#3a1f22; color:#ff9b9b; font-weight:700}
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
   .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
   .links a{
@@ -150,7 +156,11 @@
   .endrow.tickrow .t{color:#7fdcae}
   .endrow.tickrow .d{color:#6fc79b}
   .unit.done .tickbtn.on{opacity:1}
-  .rowbtns{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
+  .rowbtns{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center}
+  .rowbtns .iconb{
+    padding:4px 11px; font-size:15px; line-height:1.15; color:var(--tx3);
+    margin-left:auto; font-family:inherit;
+  }
   .rowbtns button{
     background:none; border:1px solid var(--line); color:var(--tx3);
     border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
@@ -375,6 +385,7 @@
 <body>
 
 <header>
+  <div class="hrow">
   <button class="iconbtn" id="upBtn" aria-label="Back" hidden>‹</button>
   <button id="tripBtn">
     <span class="crumb" id="crumb" hidden></span>
@@ -382,10 +393,11 @@
     <span id="tripSub"></span>
   </button>
   <button class="iconbtn" id="menuBtn" aria-label="Menu">•••</button>
+  </div>
+  <div id="focus" hidden></div>
 </header>
 
 <main>
-  <div id="focus" hidden></div>
   <div id="list"></div>
   <div id="empty">No entries yet.<br>Tap <b>+</b> to add the first one.</div>
 </main>
@@ -428,9 +440,10 @@
     <div id="cueRows"></div>
     <div class="quick" id="cuePresets"></div>
     <div class="hint">
-      <b>Deadline</b> — a moment when something is withdrawn.
-      <b>Conn</b> — minutes you must spend getting there or away; it moves with the entry.
-      <b>Slack</b> — your own target. Crossing it isn't failure, it's the point past which you stop being able to reason.
+      <b>Closes</b> — nothing after this moment.
+      <b>Target</b> — your own line; crossing it isn't failure.
+      <b>Transfer</b> — minutes you must spend getting there or away; above the card is getting there, below is getting away.
+      <b>Turn back</b> — the moment to head back regardless of what you haven't seen.
       Tap the label on a row to change which it is.
     </div>
   </div>
@@ -469,11 +482,6 @@
     </div>
   </div>
 
-  <label id="lblMiss">Start time <span class="opt">— fixed means it goes without you</span></label>
-  <div class="seg small" id="missSeg">
-    <button type="button" data-miss="soft">Flexible</button>
-    <button type="button" data-miss="hard">Fixed</button>
-  </div>
 
   <label>Status</label>
   <div class="chips" id="statusRow">
@@ -583,10 +591,11 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "7.7";
+const APP_VERSION = "8.2";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
+const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 
 /* ---------- store ---------- */
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-3);
@@ -624,10 +633,6 @@ const SEED_FIXED = {Flight:1, Cruise:1};
 function classify(t){
   let touched = false;
   (t.legs || []).forEach(l => {
-    if(l.fixed !== true && l.fixed !== false){        // give every entry a real answer
-      l.fixed = !!opt("hard", l.mode, !!SEED_FIXED[l.mode]) || (l.cues || []).some(c => c.hard && c.at);
-      touched = true;
-    }
     if(l.booked === undefined){                        // read what you'd already written down
       const n = (l.notes || "") + " " + (l.ref || "");
       l.booked = /book/i.test(n);
@@ -639,14 +644,14 @@ function classify(t){
   (t.legs || []).forEach(l => (l.cues || []).forEach(c => {
     if(!c.kind){
       const s = c.label || "";
-      c.kind = /(gate|clos|all aboard|last |deadline|cut-?off|check-?in)/i.test(s) ? "deadline"
-             : /(walk|transfer|reclaim|collect|change|shuttle to|drive|taxi to|get to)/i.test(s) ? "connection"
-             : "slack";
-      if(c.hard && c.kind !== "deadline") c.kind = "deadline";
+      c.kind = /(gate|clos|all aboard|last |deadline|cut-?off|check-?in)/i.test(s) ? "closes"
+             : /(walk|transfer|reclaim|collect|change|shuttle to|drive|taxi to|get to)/i.test(s) ? "transfer"
+             : "target";
+      if(c.hard && c.kind !== "closes") c.kind = "closes";
       touched = true;
     }
     // a connection is a duration; convert the old absolute time into one
-    if(c.kind === "connection" && c.mins === undefined){
+    if(c.kind === "transfer" && c.mins === undefined){
       const t0 = parse(c.at), a = parse(l.start), b = parse(l.end);
       let m = 10;
       const said = /(\d+)\s*(?:min|mins|minutes|m)\b/i.exec(c.label || "");
@@ -706,7 +711,21 @@ const MIGRATIONS = [
     return did;
   },
   // 3 — give every entry and every cue a settled kind
-  classify
+  classify,
+  // 4 — the four labels: closes, target, transfer, turn back
+  t => {
+    let did = false;
+    const MAP = {deadline:"closes", slack:"target", connection:"transfer"};
+    (t.legs || []).forEach(l => (l.cues || []).forEach(c => {
+      if(MAP[c.kind]){ c.kind = MAP[c.kind]; did = true; }
+      const lab = c.label || "";
+      // your own GATE labels were the app's blind spot: a turn-back, filed as a close
+      const hard = /^\s*HARD\s+GATE\s*[—–-]\s*/i, soft = /^\s*GATE\s*[—–-]\s*/i;
+      if(hard.test(lab)){ c.label = cap(lab.replace(hard, "")); c.kind = "closes"; did = true; }
+      else if(soft.test(lab)){ c.label = cap(lab.replace(soft, "")); c.kind = "turn"; did = true; }
+    }));
+    return did;
+  }
 ];
 
 // bring one itinerary fully up to date, wherever it came from
@@ -810,6 +829,7 @@ function totalsFor(t, into){
   return by;
 }
 function totalsText(t){ const by = totalsFor(t); return Object.keys(by).map(c => money(by[c], c)); }
+const plusJoin = a => a.join(" + ");
 
 // what you've recorded a cost for but haven't ticked as paid
 function owedFor(t, into){
@@ -924,16 +944,18 @@ function render(){
     parts.push(a + (a!==b ? " – "+b : ""));
   }
   const tot = totalsText(t);
-  if(tot.length) parts.push(tot.join(" · "));
-  // and what they come to together, at your saved rates
-  const byC = totalsFor(t), keys = Object.keys(byC);
-  if(keys.length > 1){
-    let gbp = 0, ok = true;
-    keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
-    if(ok) parts.push("≈ " + money(gbp, "GBP") + " combined");
+  if(tot.length){
+    let line = plusJoin(tot);
+    const byC = totalsFor(t), keys = Object.keys(byC);
+    if(keys.length > 1){
+      let gbp = 0, ok = true;
+      keys.forEach(c => { const r = store.rate[c]; if(r == null) ok = false; else gbp += byC[c]*r; });
+      if(ok) line += " ≈ " + money(gbp, "GBP");
+    }
+    parts.push(line);
   }
   const owed = owedFor(t);
-  const owedTxt = Object.keys(owed).map(c => money(owed[c], c)).join(" · ");
+  const owedTxt = plusJoin(Object.keys(owed).map(c => money(owed[c], c)));
   if(owedTxt) parts.push(owedTxt + " outstanding");
   $("#tripSub").textContent = parts.length ? parts.join(" · ") : "Tap + to begin";
 
@@ -961,7 +983,6 @@ function render(){
     live = pick.s && pick.e && now >= pick.s && now <= pick.e;
     f.hidden = false;
     const L = lateNow(all), lateBit = L ? lateLine(L) : null;
-    const m = nextMoment(all, now);
     const when = live ? pick.e : startOf(pick);
     // name the moment for what it is, so it can't be read as the all-aboard time
     const verb = goWord(pick.l, true);
@@ -973,8 +994,7 @@ function render(){
     const body = lateBit
       ? (lateBit.alert ? '<div class="mt bad">'+esc(lateBit.alert)+'</div>' : '') +
         (lateBit.redo  ? '<div class="mt redo">'+esc(lateBit.redo)+'</div>' : '')
-      : '<div class="mt">'+esc(head)+
-        ((m && m.t <= when) ? ' · '+dur(mins(m.t - now))+' to '+esc(m.label) : '')+'</div>';
+      : '<div class="mt">'+esc(head)+'</div>';
     const lab = live ? (pick === aboard ? "Aboard" : "In progress") + " · " + untilWord(mins(when - now)) + " left"
                      : "Up next in " + untilWord(mins(when - now));
     f.innerHTML = '<div class="lab">'+esc(lab)+'</div>'+
@@ -1118,8 +1138,8 @@ function render(){
 function cueList(x){
   const s = x.s, e = x.e || x.s;
   return (x.l.cues || []).map(c => {
-    const kind = c.kind || "slack";
-    if(kind === "connection"){
+    const kind = c.kind || "target";
+    if(kind === "transfer"){
       const m = +c.mins || 0;
       const side = c.side === "after" ? "after" : "before";
       const anchor = side === "before" ? s : e;
@@ -1134,41 +1154,30 @@ function cueList(x){
     return {c:c, kind:kind, side:side, t:t};
   });
 }
-const cuesFor = (x, side) => cueList(x).filter(z => z.side === side && (z.t || z.kind === "connection"))
+const cuesFor = (x, side) => cueList(x).filter(z => z.side === side && (z.t || z.kind === "transfer"))
   .sort((a,b) => (a.t && b.t) ? a.t - b.t : a.t ? -1 : b.t ? 1 : 0);
 
-/* On the day the only number worth a countdown is the next moment you have to
-   act on: when a connection has to start, or when a deadline shuts. Whichever
-   comes first. Nothing to count to means nothing shown. */
-function nextMoment(all, now){
-  const out = [];
-  all.forEach(x => cueList(x).forEach(z => {
-    if(!z.t || z.t <= now) return;
-    if(z.kind === "deadline") out.push({t:z.t, label:z.c.label || "the deadline"});
-    else if(z.side === "before") out.push({t:z.t, label:z.c.label || "set off"});
-  }));
-  return out.sort((a,b) => a.t - b.t)[0] || null;
-}
 
 // minutes of connection sitting in the space between two entries
 const connMins = (prev, next) =>
-  (prev ? cuesFor(prev, "after").filter(z => z.kind === "connection").reduce((n,z) => n+z.mins, 0) : 0) +
-  (next ? cuesFor(next, "before").filter(z => z.kind === "connection").reduce((n,z) => n+z.mins, 0) : 0);
+  (prev ? cuesFor(prev, "after").filter(z => z.kind === "transfer").reduce((n,z) => n+z.mins, 0) : 0) +
+  (next ? cuesFor(next, "before").filter(z => z.kind === "transfer").reduce((n,z) => n+z.mins, 0) : 0);
 
 // your planning line in front of an entry, if you've set one
-const targetFor = x => cuesFor(x, "before").filter(z => z.kind === "slack" && z.t)[0] || null;
+const targetFor = x => cuesFor(x, "before").filter(z => z.kind === "target" && z.t)[0] || null;
 
 function cueBand(x, side){
   const list = cuesFor(x, side);
   if(!list.length) return null;
   const d = document.createElement("div");
-  d.className = "cue " + side + (list.some(z => z.kind === "deadline") ? " hashard" : "");
+  d.className = "cue " + side + (list.some(z => z.kind === "closes") ? " hashard" : "");
   d.innerHTML = list.map(z => {
-    const label = z.c.label ? esc(z.c.label) : "";
-    const cls = z.kind === "connection" ? "conn" : z.kind === "deadline" ? "hard" : "soft";
-    const when = z.kind === "connection" ? dur(z.mins) : hhmm(z.t);
-    return '<div class="cline '+cls+'"><span class="t">'+when+'</span>'+
-           '<span class="w">'+(label || (z.kind === "connection" ? "connection" : "")) +'</span></div>';
+    const KIND = {closes:"Closes", turn:"Turn back", transfer:"Transfer", target:"Target"};
+    const CLS  = {closes:"hard",   turn:"turn",      transfer:"conn",     target:"soft"};
+    const when = z.kind === "transfer" ? dur(z.mins) : hhmm(z.t);
+    return '<div class="cline '+(CLS[z.kind]||"soft")+'"><span class="t">'+when+'</span>'+
+           '<span class="k">'+(KIND[z.kind]||"Target")+'</span>'+
+           '<span class="w">'+(z.c.label ? esc(z.c.label) : "")+'</span></div>';
   }).join("");
   return d;
 }
@@ -1192,11 +1201,14 @@ const afterCue  = x => cueBand(x, "after");
 /* UNFORGIVING = there is no replacement at any price. A ferry ticket names a
    sailing, but another one leaves later — that's the ticket, not the trip. */
 const UNFORGIVING = {Flight:1, Cruise:1};
+/* Is there no replacement? Answered in order of how much you know:
+   what you recorded about this one, then what its cues assert, then what the
+   mode is presumed to be. A presumption never outranks a recorded fact. */
 function unforgiving(x){
-  if(onlyOne(x.l)) return true;
-  if(cueList(x).some(z => z.kind === "deadline")) return true;
-  if(x.l.fixed === true || x.l.fixed === false) return x.l.fixed;
-  return !!opt("hard", x.l.mode, !!UNFORGIVING[x.l.mode]);
+  if(onlyOne(x.l)) return true;                                 // you looked: nothing later
+  if(cueList(x).some(z => z.kind === "closes")) return true;    // a turn-back never does
+  if(fallbackOf(x.l)) return false;                             // you looked: something later
+  return !!opt("hard", x.l.mode, !!UNFORGIVING[x.l.mode]);      // otherwise, the presumption
 }
 
 // how late a thing might plausibly run, by what you're arriving on
@@ -1240,7 +1252,7 @@ function ripple(x, minutes, all){
     const required = new Date(free.getTime() + conn*60000);
     if(required <= y.s){
       out.push({y:y, state:"clear", by:mins(y.s - required),
-        made: cueList(y).filter(z => (z.kind === "deadline" || z.kind === "slack") && z.t && z.t >= required)
+        made: cueList(y).filter(z => (z.kind === "closes" || z.kind === "target") && z.t && z.t >= required)
           .map(z => ({label: z.c.label || "the deadline", by: mins(z.t - required)}))
           .sort((p, q) => p.by - q.by)[0] || null});
       return {steps:out, verdict:"absorbed", at:y, spare:mins(y.s - required)};
@@ -1249,13 +1261,13 @@ function ripple(x, minutes, all){
 
     // running late, "you still make it" is worth saying — quote the tightest
     // deadline you're still inside of, and by how much
-    const made = cueList(y).filter(z => (z.kind === "deadline" || z.kind === "slack") && z.t && z.t >= required)
+    const made = cueList(y).filter(z => (z.kind === "closes" || z.kind === "target") && z.t && z.t >= required)
       .map(z => ({label: z.c.label || "the deadline", by: mins(z.t - required)}))
       .sort((p, q) => p.by - q.by)[0] || null;
 
-    const missedDeadline = cueList(y).filter(z => z.kind === "deadline" && z.t && z.t < required)[0];
-    if(missedDeadline){
-      out.push({y:y, state:"broken", late:late, why:missedDeadline.c.label || "a deadline"});
+    const missedClose = cueList(y).filter(z => z.kind === "closes" && z.t && z.t < required)[0];
+    if(missedClose){
+      out.push({y:y, state:"broken", late:late, why:missedClose.c.label || "a deadline"});
       return {steps:out, verdict:"broken", at:y};
     }
     if(y.l.kind === "move" && unforgiving(y)){
@@ -1358,7 +1370,6 @@ function pending(all){
     ? {port:port, by:aboardBy(port), needTime:needTime, needCall:needCall} : null;
 }
 
-const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 const askText = t => t.needTime && t.needCall ? "confirm return details"
                   : t.needTime ? "confirm the all-aboard time"
                   : "add the port agent's number";
@@ -1561,7 +1572,7 @@ function rowBtns(l, mode, x){
   return (show ? '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
          (at ? " on" : held ? " held" : "")+'">'+
          (at ? "✓ Done" : held ? "🔒 Done" : "Done") + '</button>' : '')+
-         '<button data-edit="'+l.id+'">Edit</button>';
+         '<button data-edit="'+l.id+'" class="iconb" aria-label="Edit">\u270E\uFE0E</button>';
 }
 const onItsDay = (l, mode, x) => {
   const when = (mode === "off") ? parse(l.end) : parse(l.start) || parse(l.end);
@@ -1781,16 +1792,19 @@ function setKind(k){
   if(types.indexOf(cur) > -1) $("#f_mode").value = cur;
 }
 
+/* The four kinds, as the labels you'll read on the card. Position carries
+   direction for a transfer, so "before" and "after" never appear as words. */
 const CUE_STATES = [
-  {k:"deadline",   side:"before", txt:"Deadline"},
-  {k:"connection", side:"before", txt:"Conn before"},
-  {k:"connection", side:"after",  txt:"Conn after"},
-  {k:"slack",      side:"before", txt:"Slack"}
+  {k:"closes",   side:"before", txt:"Closes"},
+  {k:"target",   side:"before", txt:"Target"},
+  {k:"transfer", side:"before", txt:"Transfer"},
+  {k:"transfer", side:"after",  txt:"Transfer"},
+  {k:"turn",     side:"before", txt:"Turn back"}
 ];
 const stateIndex = c => {
-  const k = c.kind || "slack", s = c.side === "after" ? "after" : "before";
-  const i = CUE_STATES.findIndex(z => z.k === k && (k !== "connection" || z.side === s));
-  return i < 0 ? 3 : i;
+  const k = c.kind || "target", s = c.side === "after" ? "after" : "before";
+  const i = CUE_STATES.findIndex(z => z.k === k && (k !== "transfer" || z.side === s));
+  return i < 0 ? 1 : i;
 };
 
 function cueRowEditor(c){
@@ -1810,10 +1824,10 @@ function cueRowEditor(c){
     btn.textContent = st.txt;
     btn.className = "ck " + st.k;
     r.dataset.kind = st.k; r.dataset.side = st.side;
-    const isConn = st.k === "connection";
+    const isConn = st.k === "transfer";
     t.hidden = isConn; m.hidden = !isConn;
     if(isConn && !m.value) m.value = "10";
-    t.placeholder = st.k === "deadline" ? "leave blank if not looked up" : "";
+    t.placeholder = st.k === "closes" ? "leave blank if not looked up" : "";
   }
   btn.addEventListener("click", () => { i = (i + 1) % CUE_STATES.length; paint(); });
   r.querySelector(".cx").addEventListener("click", () => r.remove());
@@ -1826,12 +1840,12 @@ function readCues(){
   return [...document.querySelectorAll("#cueRows .cuerow")].map(r => {
     const kind = r.dataset.kind, side = r.dataset.side;
     const label = r.querySelector(".cl").value.trim();
-    if(kind === "connection"){
+    if(kind === "transfer"){
       const mins = Math.max(1, parseInt(r.querySelector(".cm").value, 10) || 0);
       return {label:label, kind:kind, side:side, mins:mins};
     }
     return {label:label, kind:kind, side:side, at:r.querySelector(".ct").value};
-  }).filter(c => c.kind === "connection" ? c.mins > 0 : !!c.at)
+  }).filter(c => c.kind === "transfer" ? c.mins > 0 : !!c.at)
     .sort((a,b) => (a.at||"").localeCompare(b.at||""));
 }
 
@@ -1845,11 +1859,6 @@ function setFb(v){
 document.querySelectorAll("#fbSeg button").forEach(b =>
   b.addEventListener("click", () => setFb(b.dataset.fb)));
 
-let missMode = "soft";
-function setMiss(v){
-  missMode = v;
-  document.querySelectorAll("#missSeg button").forEach(b => b.classList.toggle("on", b.dataset.miss === v));
-}
 /* Every mode has a name for the thing you're actually on, and it's never the
    booking reference: a ship, a flight number, a bus line, a train service. */
 const SERVICE_ASK = {
@@ -1902,8 +1911,6 @@ function openSheet(id){
   $("#f_last").value  = l && l.fallback ? (l.fallback.last || "") : "";
   setFb(l && l.fallback ? (l.fallback.known ||
         ((l.fallback.next || l.fallback.every || l.fallback.last) ? "yes" : "")) : "");
-  setMiss(l ? (l.fixed ? "hard" : "soft")
-            : (opt("hard", $("#f_mode").value, !!SEED_FIXED[$("#f_mode").value]) ? "hard" : "soft"));
   setStatus(l);
   $("#cueRows").innerHTML = "";
   ((l && l.cues) || []).forEach(c => cueRowEditor(c));
@@ -1985,7 +1992,6 @@ function collect(){
                                  next: fbMode === "yes" ? ($("#f_next").value || "") : "",
                                  every: fbMode === "yes" ? (parseInt($("#f_every").value, 10) || null) : null,
                                  last: fbMode === "yes" ? ($("#f_last").value || "") : ""} : null,
-    fixed: missMode === "hard",
     booked: readStatus("booked"), paid: readStatus("paid"), checkedIn: readStatus("checkedIn")
   };
 }
@@ -2132,13 +2138,10 @@ $("#newTrip").addEventListener("click", () => {
 
 document.querySelectorAll("#kindSeg button").forEach(b =>
   b.addEventListener("click", () => setKind(b.dataset.kind)));
-document.querySelectorAll("#missSeg button").forEach(b =>
-  b.addEventListener("click", () => setMiss(b.dataset.miss)));
 document.querySelectorAll("#statusRow button").forEach(b =>
   b.addEventListener("click", () => b.classList.toggle("on")));
 // picking a type re-seeds the start-time answer, until you've touched it yourself
 $("#f_mode").addEventListener("change", () => {
-  if(!editing) setMiss(opt("hard", $("#f_mode").value, !!SEED_FIXED[$("#f_mode").value]) ? "hard" : "soft");
 });
 
 // opening an empty arrival picker starts it just after the departure
@@ -2155,32 +2158,32 @@ $("#f_mode").addEventListener("change", suggestEnd);
 
 const CUE_PRESETS = {
   move: [
-    {key:"there",  label:"+ Be there",      kind:"slack",      mins:-150, from:"start", text:l => "Be at " + (l || "the terminal")},
-    {key:"walk",   label:"+ Walk to it",    kind:"connection", side:"before", dur:10,   text:() => "Walk to it"},
-    {key:"bag",    label:"+ Bag drop",      kind:"deadline",   mins:-60,  from:"start", text:() => "Bag drop closes"},
-    {key:"gate",   label:"+ Gate / aboard", kind:"deadline",   mins:-30,  from:"start",
+    {key:"there",  label:"+ Be there",      kind:"target",     mins:-150, from:"start", text:l => "Be at " + (l || "the terminal")},
+    {key:"walk",   label:"+ Walk to it",    kind:"transfer", side:"before", dur:10,   text:() => "Walk to it"},
+    {key:"bag",    label:"+ Bag drop",      kind:"closes",   mins:-60,  from:"start", text:() => "Bag drop closes"},
+    {key:"gate",   label:"+ Gate / aboard", kind:"closes",   mins:-30,  from:"start",
                    text:(l, m) => (m === "Cruise" || m === "Ferry") ? "All aboard" : "Gate closes"},
-    {key:"off",    label:"+ Off and clear", kind:"connection", side:"after", dur:40,
+    {key:"off",    label:"+ Off and clear", kind:"transfer", side:"after", dur:40,
                    text:(l, m) => (m === "Cruise" || m === "Ferry") ? "Off the ship" : "Off and clear"},
   ],
   stop: [
-    {key:"leave",  label:"+ Leave by",      kind:"slack",      mins:-30, from:"start", text:() => "Leave for this by"},
-    {key:"getto",  label:"+ Getting there", kind:"connection", side:"before", dur:15,  text:() => "Getting there"},
-    {key:"out",    label:"+ Out by",        kind:"slack",      mins:0,   from:"end",   text:() => "Out by"},
-    {key:"after",  label:"+ Leaving after", kind:"connection", side:"after", dur:10,   text:() => "Leaving"},
+    {key:"leave",  label:"+ Leave by",      kind:"target",      mins:-30, from:"start", text:() => "Leave for this by"},
+    {key:"getto",  label:"+ Getting there", kind:"transfer", side:"before", dur:15,  text:() => "Getting there"},
+    {key:"out",    label:"+ Out by",        kind:"target",      mins:0,   from:"end",   text:() => "Out by"},
+    {key:"after",  label:"+ Leaving after", kind:"transfer", side:"after", dur:10,   text:() => "Leaving"},
   ],
   port: [
-    {key:"ashore", label:"+ Ashore by",     kind:"slack",      mins:30,  from:"start", text:() => "Ashore by"},
-    {key:"back",   label:"+ Back at gangway", kind:"slack",    mins:-45, from:"end",   text:() => "Back at the gangway"},
-    {key:"shuttle",label:"+ Last shuttle",  kind:"deadline",   mins:-60, from:"end",   text:() => "Last port shuttle"},
-    {key:"tender", label:"+ Tender queue",  kind:"connection", side:"after", dur:30,   text:() => "Tender queue"},
+    {key:"ashore", label:"+ Ashore by",     kind:"target",      mins:30,  from:"start", text:() => "Ashore by"},
+    {key:"back",   label:"+ Back at gangway", kind:"turn",      mins:-45, from:"end",   text:() => "Back at the gangway"},
+    {key:"shuttle",label:"+ Last shuttle",  kind:"closes",   mins:-60, from:"end",   text:() => "Last port shuttle"},
+    {key:"tender", label:"+ Tender queue",  kind:"transfer", side:"after", dur:30,   text:() => "Tender queue"},
   ]
 };
 
 function buildPresets(k){
   const box = $("#cuePresets");
   box.innerHTML = "";
-  (CUE_PRESETS[k] || []).concat([{key:"blank", label:"+ Custom", kind:"slack", mins:0, from:"start", text:() => ""}])
+  (CUE_PRESETS[k] || []).concat([{key:"blank", label:"+ Custom", kind:"target", mins:0, from:"start", text:() => ""}])
     .forEach(pre => {
       const b = document.createElement("button");
       b.type = "button"; b.textContent = pre.label;
@@ -2190,10 +2193,10 @@ function buildPresets(k){
 }
 
 function addPreset(pre){
-  if(pre.kind === "connection"){
+  if(pre.kind === "transfer"){
     const mins = +opt("preset", pre.key, pre.dur || 10);
     const r = cueRowEditor({label:pre.text($("#f_from").value.trim(), $("#f_mode").value),
-                            kind:"connection", side:pre.side || "before", mins:mins});
+                            kind:"transfer", side:pre.side || "before", mins:mins});
     r.querySelector(".cm").focus();
     return;
   }
@@ -2205,7 +2208,7 @@ function addPreset(pre){
     at = stamp(new Date(base.getTime() + (pre.mins < 0 ? -off : off)*60000));
   }
   const r = cueRowEditor({label: pre.text($("#f_from").value.trim(), $("#f_mode").value),
-                          kind: pre.kind || "slack", at: at});
+                          kind: pre.kind || "target", at: at});
   r.querySelector(pre.key === "blank" ? ".cl" : ".ct").focus();
 }
 
@@ -2275,7 +2278,7 @@ const SETTINGS = [
                          g:"typical", t:"dur", d:m => TYPICAL[m] || 60},
   {each:() => PORT_TYPES, g:"typical", t:"dur", d:m => TYPICAL[m] || 540},
 
-  {sec:"Can't be missed by default", note:"tap to change what a new entry starts as"},
+  {sec:"No replacement, by nature", note:"modes where missing it can't be undone at any price"},
   {each:() => MOVE_TYPES, g:"hard", t:"toggle", d:m => !!SEED_FIXED[m], row:"chips"},
 
   {sec:"Preset times", note:"what the buttons in the cue list fill in"},
