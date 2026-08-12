@@ -51,8 +51,8 @@
   }
   .plans .alt{background:none; border-style:dashed; color:var(--tx3)}
   .iconbtn{
-    width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
-    background:var(--bg2); color:var(--tx2); font-size:17px; line-height:1;
+    width:38px; height:38px; border-radius:0; border:0;
+    background:none; color:var(--tx2); font-size:17px; line-height:1;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;
   }
   main{padding:14px 16px 0; max-width:640px; margin:0 auto}
@@ -130,6 +130,9 @@
     background:var(--bg2); border:0; border-radius:0;
     padding:2px 7px; font-size:11px; font-weight:600; color:var(--tx2); letter-spacing:.01em;
   }
+  .ic{width:1em; height:1em; display:inline-block; vertical-align:-.125em; flex:0 0 auto}
+  .chip.mode{display:inline-flex; align-items:center; gap:5px}
+  .chip.mode .ic{width:12px; height:12px}
   .chip.state{
     text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:750;
     padding:2px 6px;
@@ -147,24 +150,37 @@
   .notes{font-size:13px; color:var(--tx2); margin-top:6px; white-space:pre-wrap; word-break:break-word}
   .links{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
   .links a{
-    display:inline-flex; align-items:center; gap:5px; text-decoration:none;
-    background:#1d2a3a; border:1px solid #2c3d51; color:var(--accent);
-    border-radius:9px; padding:6px 10px; font-size:12.5px; font-weight:620;
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    background:none; border:0; color:var(--accent);
+    padding:6px 2px; font-size:12.5px; font-weight:640; min-height:32px;
   }
-  .links a:active{background:#24344a}
-  .tickbtn.on{border-color:#25452f; color:#7fdcae; background:#152a20}
+  .links{gap:16px}
   .endrow.tickrow .t{color:#7fdcae}
   .endrow.tickrow .d{color:#6fc79b}
   .unit.done .tickbtn.on{opacity:1}
+  .iconb{
+    border:0; background:none; padding:4px 8px; color:var(--tx3);
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .iconb .ic{width:18px; height:18px}
+  #fab .ic{width:26px; height:26px; stroke-width:2.4}
+  .iconbtn .ic{width:19px; height:19px}
+  .links a .ic, .rowbtns .tickbtn .ic{width:14px; height:14px}
+  .rowbtns .tickbtn{display:inline-flex; align-items:center; gap:6px}
+  .route .ic.pin{width:15px; height:15px; margin-right:7px; color:var(--stay)}
+  .sea .ic{width:14px; height:14px; margin-right:7px; color:#6ba7c9}
+  .confirm .ct .ic{width:14px; height:14px; margin-right:7px}
+  .cb .more .ic{width:16px; height:16px}
   .rowbtns{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center}
-  .rowbtns .iconb{
-    padding:4px 11px; font-size:15px; line-height:1.15; color:var(--tx3);
-    margin-left:auto; font-family:inherit;
-  }
+  .rowbtns .iconb{margin-left:auto; padding:6px 0}
+  /* an action is an icon and a word; it needs no box round it */
   .rowbtns button{
-    background:none; border:1px solid var(--line); color:var(--tx3);
-    border-radius:9px; padding:5px 11px; font-size:12.5px; font-family:inherit; font-weight:600;
+    background:none; border:0; border-radius:0; color:var(--tx2);
+    padding:6px 2px; font-size:12.5px; font-family:inherit; font-weight:640;
+    display:inline-flex; align-items:center; gap:6px; min-height:32px;
   }
+  .rowbtns .tickbtn.on{color:#79d3a5}
+  .rowbtns .tickbtn.held{color:#d0bd77}
 
   /* a journey that runs for days holds everything booked inside it */
   .rail{
@@ -178,7 +194,7 @@
     font-size:12px; color:var(--tx3); letter-spacing:.03em;
     padding:9px 2px 9px calc(var(--pad) + var(--gut) + 12px); font-style:italic;
   }
-  .sea::before{content:"🌊  "; font-style:normal}
+
 
   .unit.anchor{background:#171b2e; border-color:#33305c}
   .unit.anchor::before{background:var(--stay); width:9px}
@@ -206,7 +222,6 @@
 
   .mt.redo{color:#9fd4ff; font-weight:640; margin-top:2px}
   .mt.bad{color:#ff9b9b; font-weight:700; margin-top:2px}
-  .tickbtn.held{border-style:dashed; color:#8a7a55}
   .confirm{
     margin-top:11px; background:#2a1e12; border:1px solid #5c4222; border-radius:10px;
     padding:10px 11px;
@@ -243,6 +258,7 @@
     position:fixed; right:18px; bottom:calc(20px + env(safe-area-inset-bottom));
     width:58px; height:58px; border-radius:50%; border:0; z-index:30;
     background:var(--accent); color:#04121f; font-size:30px; font-weight:400; line-height:1;
+    display:flex; align-items:center; justify-content:center;
     box-shadow:0 8px 26px rgba(0,0,0,.5);
   }
   #fab:active{transform:scale(.94)}
@@ -386,13 +402,13 @@
 
 <header>
   <div class="hrow">
-  <button class="iconbtn" id="upBtn" aria-label="Back" hidden>‹</button>
+  <button class="iconbtn" id="upBtn" aria-label="Back" hidden></button>
   <button id="tripBtn">
     <span class="crumb" id="crumb" hidden></span>
     <span class="n" id="tripName">My trip</span>
     <span id="tripSub"></span>
   </button>
-  <button class="iconbtn" id="menuBtn" aria-label="Menu">•••</button>
+  <button class="iconbtn" id="menuBtn" aria-label="Menu"></button>
   </div>
   <div id="focus" hidden></div>
 </header>
@@ -591,7 +607,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "8.2";
+const APP_VERSION = "8.3";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
@@ -848,9 +864,55 @@ const MOVE_TYPES = ["Flight","Train","Cruise","Ferry","Coach","Bus","Taxi","Car"
 const STOP_TYPES = ["Hotel","Apartment","Restaurant","Spa / massage","Activity","Tour","Show / event","Meeting","Other"];
 const PORT_TYPES = ["Port call","Sea day","Tender port","Other"];
 const STAY_TYPES = STOP_TYPES;
-const ICONS = {Flight:"✈",Train:"🚆",Cruise:"🛳",Coach:"🚌",Bus:"🚌",Ferry:"⛴",Taxi:"🚕",Car:"🚗","Tube / Metro":"Ⓜ",Walk:"🚶",Transfer:"↔",
-  Hotel:"🛏",Apartment:"🏠",Restaurant:"🍽","Spa / massage":"💆",Activity:"◎",Tour:"🧭","Show / event":"🎟",Meeting:"👥",
-  "Port call":"⚓","Tender port":"⚓","Sea day":"🌊",Other:"•"};
+/* Icons from Lucide (ISC), inlined as paths so the file stays one file and the
+   glyphs stay one colour — no emoji, no font, no network. */
+const ICON = {
+  "edit":'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" />',
+  "done":'<path d="M12 13v8" /> <path d="M12 3v3" /> <path d="M18.172 6a2 2 0 0 1 1.414.586l2.06 2.06a1.207 1.207 0 0 1 0 1.708l-2.06 2.06a2 2 0 0 1-1.414.586H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" />',
+  "menu":'<circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" />',
+  "back":'<path d="m15 18-6-6 6-6" />',
+  "open":'<path d="M15 3h6v6" /> <path d="M10 14 21 3" /> <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />',
+  "wallet":'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /> <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />',
+  "map":'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle cx="12" cy="10" r="3" />',
+  "doc":'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /> <path d="M14 2v5a1 1 0 0 0 1 1h5" /> <path d="M10 9H8" /> <path d="M16 13H8" /> <path d="M16 17H8" />',
+  "call":'<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384" />',
+  "clock":'<circle cx="12" cy="12" r="10" /> <path d="M12 6v6l4 2" />',
+  "add":'<path d="M5 12h14" /> <path d="M12 5v14" />',
+  "close":'<path d="M18 6 6 18" /> <path d="m6 6 12 12" />',
+  "check":'<path d="M20 6 9 17l-5-5" />',
+  "anchor":'<path d="M12 6v16" /> <path d="m19 13 2-1a9 9 0 0 1-18 0l2 1" /> <path d="M9 11h6" /> <circle cx="12" cy="4" r="2" />',
+  "chev":'<path d="m9 18 6-6-6-6" />',
+  "sea":'<path d="M2 12q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 19q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 5q2.5 2 5 0t5 0 5 0 5 0" />',
+  "Flight":'<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />',
+  "Train":'<path d="M8 3.1V7a4 4 0 0 0 8 0V3.1" /> <path d="m9 15-1-1" /> <path d="m15 15 1-1" /> <path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z" /> <path d="m8 19-2 3" /> <path d="m16 19 2 3" />',
+  "Cruise":'<path d="M12 10.189V14" /> <path d="M12 2v3" /> <path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" /> <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76" /> <path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />',
+  "Ferry":'<path d="M10 2v15" /> <path d="M7 22a4 4 0 0 1-4-4 1 1 0 0 1 1-1h16a1 1 0 0 1 1 1 4 4 0 0 1-4 4z" /> <path d="M9.159 2.46a1 1 0 0 1 1.521-.193l9.977 8.98A1 1 0 0 1 20 13H4a1 1 0 0 1-.824-1.567z" />',
+  "Coach":'<path d="M4 6 2 7" /> <path d="M10 6h4" /> <path d="m22 7-2-1" /> <rect width="16" height="16" x="4" y="3" rx="2" /> <path d="M4 11h16" /> <path d="M8 15h.01" /> <path d="M16 15h.01" /> <path d="M6 19v2" /> <path d="M18 21v-2" />',
+  "Bus":'<path d="M8 6v6" /> <path d="M15 6v6" /> <path d="M2 12h19.6" /> <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" /> <circle cx="7" cy="18" r="2" /> <path d="M9 18h5" /> <circle cx="16" cy="18" r="2" />',
+  "Taxi":'<path d="M10 2h4" /> <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" /> <path d="M7 14h.01" /> <path d="M17 14h.01" /> <rect width="18" height="8" x="3" y="10" rx="2" /> <path d="M5 18v2" /> <path d="M19 18v2" />',
+  "Car":'<path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" /> <path d="M7 14h.01" /> <path d="M17 14h.01" /> <rect width="18" height="8" x="3" y="10" rx="2" /> <path d="M5 18v2" /> <path d="M19 18v2" />',
+  "Tube / Metro":'<rect width="16" height="16" x="4" y="3" rx="2" /> <path d="M4 11h16" /> <path d="M12 3v8" /> <path d="m8 19-2 3" /> <path d="m18 22-2-3" /> <path d="M8 15h.01" /> <path d="M16 15h.01" />',
+  "Walk":'<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /> <path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /> <path d="M16 17h4" /> <path d="M4 13h4" />',
+  "Transfer":'<path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" /> <path d="M7 14h.01" /> <path d="M17 14h.01" /> <rect width="18" height="8" x="3" y="10" rx="2" /> <path d="M5 18v2" /> <path d="M19 18v2" />',
+  "Other":'<circle cx="12" cy="12" r="10" />',
+  "Hotel":'<path d="M2 4v16" /> <path d="M2 8h18a2 2 0 0 1 2 2v10" /> <path d="M2 17h20" /> <path d="M6 8v9" />',
+  "Apartment":'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />',
+  "Restaurant":'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /> <path d="M7 2v20" /> <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />',
+  "Spa / massage":'<circle cx="12" cy="12" r="3" /> <path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5" /> <path d="M12 7.5V9" /> <path d="M7.5 12H9" /> <path d="M16.5 12H15" /> <path d="M12 16.5V15" /> <path d="m8 8 1.88 1.88" /> <path d="M14.12 9.88 16 8" /> <path d="m8 16 1.88-1.88" /> <path d="M14.12 14.12 16 16" />',
+  "Activity":'<path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" />',
+  "Tour":'<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z" /> <path d="M15 5.764v15" /> <path d="M9 3.236v15" />',
+  "Show / event":'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /> <path d="M13 5v2" /> <path d="M13 17v2" /> <path d="M13 11v2" />',
+  "Meeting":'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" />',
+  "Port call":'<path d="M12 6v16" /> <path d="m19 13 2-1a9 9 0 0 1-18 0l2 1" /> <path d="M9 11h6" /> <circle cx="12" cy="4" r="2" />',
+  "Sea day":'<path d="M2 12q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 19q2.5 2 5 0t5 0 5 0 5 0" /> <path d="M2 5q2.5 2 5 0t5 0 5 0 5 0" />',
+  "Tender port":'<path d="M10 2v15" /> <path d="M7 22a4 4 0 0 1-4-4 1 1 0 0 1 1-1h16a1 1 0 0 1 1 1 4 4 0 0 1-4 4z" /> <path d="M9.159 2.46a1 1 0 0 1 1.521-.193l9.977 8.98A1 1 0 0 1 20 13H4a1 1 0 0 1-.824-1.567z" />'
+};
+function icon(name, cls){
+  const d = ICON[name] || ICON.Other;
+  return '<svg class="ic'+(cls ? " "+cls : "")+'" viewBox="0 0 24 24" fill="none" '+
+         'stroke="currentColor" stroke-width="2" stroke-linecap="round" '+
+         'stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+}
 
 // how much slack is worth flagging, by what you're about to catch
 
@@ -1009,7 +1071,7 @@ function render(){
   if(toDo && pick && !f.hidden){
     const l = toDo.port.l;
     const same = pick.l.id === l.id;
-    const head = "⚓ " + (same ? cap(askText(toDo))
+    const head = (same ? cap(askText(toDo))
                               : (l.place || "Next port") + " · " + askText(toDo));
     const w = document.createElement("div");
     w.className = "confirm" + (confirmOpen ? " open" : "");
@@ -1018,7 +1080,7 @@ function render(){
                               '<input id="c_aboard" type="time">';
     if(toDo.needCall) form += '<label for="c_agent">Port agent\u2019s number</label>'+
                               '<input id="c_agent" type="tel" inputmode="tel" placeholder="+33 \u2026">';
-    w.innerHTML = '<button type="button" class="ct">'+esc(head)+'</button>'+
+    w.innerHTML = '<button type="button" class="ct">'+icon("anchor")+esc(head)+'</button>'+
                   '<div class="cf"'+(confirmOpen ? "" : " hidden")+'>'+form+
                   '<div class="cb"><button type="button" class="save">Save</button></div></div>';
     $(".ct", w).addEventListener("click", () => {
@@ -1056,7 +1118,7 @@ function render(){
       if(empty >= 1){
         const r = document.createElement("div");
         r.className = "rail";
-        r.innerHTML = '<div class="sea">'+empty+(empty===1 ? " day" : " days")+' at sea</div>';
+        r.innerHTML = '<div class="sea">'+icon("sea")+empty+(empty===1 ? " day" : " days")+' at sea</div>';
         list.appendChild(r);
         rail = null; curDay = null;
       }
@@ -1571,8 +1633,8 @@ function rowBtns(l, mode, x){
   const held = !at && blockedBy(l);
   return (show ? '<button data-tick="'+l.id+'" data-mode="'+mode+'" class="tickbtn'+
          (at ? " on" : held ? " held" : "")+'">'+
-         (at ? "✓ Done" : held ? "🔒 Done" : "Done") + '</button>' : '')+
-         '<button data-edit="'+l.id+'" class="iconb" aria-label="Edit">\u270E\uFE0E</button>';
+         (at ? icon("done")+"Done" : held ? icon("clock")+"Done" : icon("done")+"Done") + '</button>' : '')+
+         '<button data-edit="'+l.id+'" class="iconb" aria-label="Edit">'+icon("edit")+'</button>';
 }
 const onItsDay = (l, mode, x) => {
   const when = (mode === "off") ? parse(l.end) : parse(l.start) || parse(l.end);
@@ -1658,9 +1720,17 @@ function item(spec){
 
 const linkList = l => (l.links || [])
   .filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()))
-  .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">↗ '+esc(a.label||"Open")+'</a>');
+  .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+linkIcon(a.label)+esc(a.label||"Open")+'</a>');
+/* the label tells you what kind of thing it opens */
+function linkIcon(label){
+  const t = (label || "").toLowerCase();
+  if(/wallet|pass|boarding/.test(t)) return icon("wallet");
+  if(/map|where|directions/.test(t)) return icon("map");
+  if(/mail|email|message|booking|confirm/.test(t)) return icon("doc");
+  return icon("open");
+}
 
-const modeChip = l => '<span class="chip fact mode">'+(ICONS[l.mode]||"•")+' '+esc(l.mode||"Other")+'</span>';
+const modeChip = l => '<span class="chip fact mode">'+icon(l.mode)+esc(l.mode||"Other")+'</span>';
 function costChip(l){
   const c = parseFloat(l.cost);
   return (!isNaN(c) && c > 0) ? '<span class="chip fact money">'+money(c, l.ccy||"GBP")+'</span>' : "";
@@ -1753,11 +1823,11 @@ function portRow(x, now){
   const by = (l.aboard || l.portOK) ? aboardBy(x) : null;   // shown only when confirmed
   const chips = factChips(l);
   const agent = l.agent
-    ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'">☎ Call the port agent</a>'] : [];
+    ? ['<a href="tel:'+esc(l.agent.replace(/\s+/g,""))+'">'+icon("call")+'Call the port agent</a>'] : [];
   return item({
     leg: l, start: x.s, end: x.e, done: parse(l.doneAt),
     klass: ["port"].concat(stateClass(l, x, now, !!l.doneAt)),
-    name: '⚓ '+esc(l.place || "Port call"),
+    name: icon("anchor", "pin")+esc(l.place || "Port call"),
     chips: chips, state: stateChips(l), links: agent, plans: planChips(l), btns: rowBtns(l, "", x),
     tail: esc((x.e && x.s && dayKey(x.e) !== dayKey(x.s) ? short(x.e) + " · " : "") +
               (by ? "all aboard " + hhmm(by) : ""))
@@ -2028,7 +2098,7 @@ function renderTrips(){
     row.className = "triprow" + (on ? " active" : "");
     row.innerHTML = '<button>'+(planHost && on ? "✓ " : "")+esc(t.name)+'<small>'+esc(dates)+' · '+t.legs.length+
       (t.legs.length===1?" entry":" entries")+(totals? " · "+esc(totals):"")+'</small></button>'+
-      '<button class="more" aria-label="Options">•••</button>';
+      '<button class="more" aria-label="Options">'+icon("menu")+'</button>';
     const [open, more] = row.querySelectorAll("button");
     open.addEventListener("click", () => {
       if(planHost){ kids(planHost).forEach(k => k.active = (k.id === t.id)); }
@@ -2082,6 +2152,9 @@ $("#fab").addEventListener("click", () => openSheet(null));
 $("#scrim").addEventListener("click", hideAll);
 $("#cancelBtn").addEventListener("click", hideAll);
 $("#verLine").textContent = "Itinerary · version " + APP_VERSION;
+$("#upBtn").innerHTML   = icon("back");
+$("#menuBtn").innerHTML = icon("menu");
+$("#fab").innerHTML     = icon("add");
 $("#menuBtn").addEventListener("click", () => show("#menu"));
 $("#menuClose").addEventListener("click", hideAll);
 $("#tripsClose").addEventListener("click", hideAll);
