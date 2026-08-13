@@ -92,6 +92,15 @@
   }
   .times{flex:0 0 var(--gut); text-align:right; padding-top:1px}
   .times .a{font-size:16px; font-weight:680; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+  .times .later{margin-top:5px; display:flex; flex-direction:column; align-items:flex-end; gap:1px}
+  .times .later .lt{
+    background:none; border:0; padding:1px 0; color:var(--tx3);
+    font:600 12.5px inherit; font-family:inherit; font-variant-numeric:tabular-nums;
+  }
+  .times .later .el{color:var(--tx3); font-size:10px; line-height:.9; opacity:.7}
+  .times .later.none{color:var(--tx3); align-items:flex-end}
+  .times .later.none .ic{width:17px; height:17px}
+  .seg.wrap{flex-wrap:wrap}
   .endrow{
     flex:1 1 100%; display:flex; gap:12px; align-items:baseline;
     margin-top:10px; padding-top:9px; border-top:1px solid var(--line);
@@ -263,6 +272,16 @@
   }
   .sheet.on{transform:translateY(0); visibility:visible}
   .grab{width:38px; height:4px; border-radius:2px; background:var(--line); margin:6px auto 14px}
+  #stepSeg{display:flex; margin:2px 0 14px; border-bottom:1px solid var(--line)}
+  #stepSeg button{
+    flex:1; display:flex; align-items:flex-end; justify-content:center; text-align:center; line-height:1.35;
+    background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px;
+    min-height:38px; padding:0 4px 8px;
+    color:var(--tx3); font:700 10.5px inherit; font-family:inherit;
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+  #stepSeg button.on{color:var(--tx); border-bottom-color:var(--accent)}
+  #sheet .step{display:block}
   .sheet h2{font-size:17px; margin:0 0 14px; font-weight:700; letter-spacing:-.01em}
   label{display:block; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--tx3); font-weight:700; margin:14px 0 5px}
   label .opt{text-transform:none; letter-spacing:0; font-weight:500}
@@ -415,6 +434,14 @@
   <div class="grab"></div>
   <h2 id="sheetTitle">Add entry</h2>
 
+  <div id="stepSeg">
+    <button type="button" data-step="1" class="on">Basics</button>
+    <button type="button" data-step="2">Planning</button>
+    <button type="button" data-step="3">Advanced</button>
+  </div>
+
+  <div class="step" data-step="1">
+
   <div class="seg" id="kindSeg">
     <button type="button" data-kind="move" class="on">Journey</button>
     <button type="button" data-kind="stop">Stay / event</button>
@@ -440,8 +467,11 @@
   <label for="f_end" id="lblEnd">Arrives</label>
   <input id="f_end" type="datetime-local">
 
+  </div>
+
+  <div class="step" data-step="2" hidden>
   <div id="rowBoard" hidden>
-    <label>Buffers and deadlines <span class="opt">(optional — anything you must do before or after)</span></label>
+    <label>What has to happen <span class="opt">(optional — before it, or after it)</span></label>
     <div id="cueRows"></div>
     <div class="quick" id="cuePresets"></div>
     <div class="hint">
@@ -458,12 +488,6 @@
     <input id="f_aboard" type="datetime-local">
     <label for="f_agent">Port agent's number <span class="opt">(from today's programme — who to ring if you're late)</span></label>
     <input id="f_agent" type="tel" inputmode="tel" placeholder="+34 …">
-  </div>
-
-  <label for="f_cost">Cost <span class="opt">(optional)</span></label>
-  <div class="money">
-    <input id="f_cost" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
-    <select id="f_ccy"><option>GBP</option><option>EUR</option><option>USD</option><option>CHF</option></select>
   </div>
 
   <div id="rowFallback">
@@ -487,6 +511,15 @@
     </div>
   </div>
 
+
+  </div>
+
+  <div class="step" data-step="3" hidden>
+  <label for="f_cost">Cost <span class="opt">(optional)</span></label>
+  <div class="money">
+    <input id="f_cost" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+    <select id="f_ccy"><option>GBP</option><option>EUR</option><option>USD</option><option>CHF</option></select>
+  </div>
 
   <label>Status</label>
   <div class="chips" id="statusRow">
@@ -517,6 +550,8 @@
 
   <label for="f_notes">Notes <span class="opt">(optional)</span></label>
   <textarea id="f_notes" placeholder="Check in 90 min before. Gate closes 20 min prior."></textarea>
+
+  </div>
 
   <div class="actions">
     <button class="btn danger" id="delBtn" hidden>Delete</button>
@@ -549,6 +584,22 @@
   <div class="actions">
     <button class="btn" id="pretendNow">Back to now</button>
     <button class="btn primary" id="pretendSave">Rehearse</button>
+  </div>
+</div>
+
+<!-- Taking a later departure -->
+<div class="sheet" id="shift">
+  <div class="grab"></div>
+  <h2 id="shiftTitle">Take a later one</h2>
+  <label>Departures you recorded</label>
+  <div class="seg small wrap" id="shiftRow"></div>
+  <label for="f_shift">Or the time it actually leaves</label>
+  <input id="f_shift" type="datetime-local">
+  <div class="hint" id="shiftDelta"></div>
+  <div class="hint" id="shiftHint"></div>
+  <div class="actions">
+    <button class="btn" id="shiftCancel">Cancel</button>
+    <button class="btn primary" id="shiftSave">Move it</button>
   </div>
 </div>
 
@@ -597,7 +648,7 @@
 <script>
 (function(){
 "use strict";
-const APP_VERSION = "9.4";
+const APP_VERSION = "9.11";
 const KEY = "itinerary.v2";
 const OLD = "itinerary.v1";
 const $ = (s, root) => (root || document).querySelector(s);
@@ -857,6 +908,10 @@ const STAY_TYPES = STOP_TYPES;
 /* Icons from Lucide (ISC), inlined as paths so the file stays one file and the
    glyphs stay one colour — no emoji, no font, no network. */
 const ICON = {
+  "nolater":'<path d="M12 17V3" /> <path d="m6 11 6 6 6-6" /> <path d="M19 21H5" />',
+  "ticket":'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /> <path d="M13 5v2" /> <path d="M13 17v2" /> <path d="M13 11v2" />',
+  "tickets":'<path d="m3.173 8.18 11-5a2 2 0 0 1 2.647.993L18.56 8" /> <path d="M6 10V8" /> <path d="M6 14v1" /> <path d="M6 19v2" /> <rect x="2" y="8" width="20" height="13" rx="2" />',
+  "stamp":'<path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13" /> <path d="M20 15.5a2.5 2.5 0 0 0-2.5-2.5h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1z" /> <path d="M5 22h14" />',
   "edit":'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" />',
   "done":'<path d="M12 13v8" /> <path d="M12 3v3" /> <path d="M18.172 6a2 2 0 0 1 1.414.586l2.06 2.06a1.207 1.207 0 0 1 0 1.708l-2.06 2.06a2 2 0 0 1-1.414.586H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" />',
   "menu":'<circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" />',
@@ -898,7 +953,9 @@ const ICON = {
   "Tender port":'<path d="M10 2v15" /> <path d="M7 22a4 4 0 0 1-4-4 1 1 0 0 1 1-1h16a1 1 0 0 1 1 1 4 4 0 0 1-4 4z" /> <path d="M9.159 2.46a1 1 0 0 1 1.521-.193l9.977 8.98A1 1 0 0 1 20 13H4a1 1 0 0 1-.824-1.567z" />'
 };
 function icon(name, cls){
-  const d = ICON[name] || ICON.Other;
+  const d = ICON[name];
+  if(!d) return '<svg class="ic missing" viewBox="0 0 24 24"><rect x="3" y="3" width="18" '+
+                'height="18" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>';
   return '<svg class="ic'+(cls ? " "+cls : "")+'" viewBox="0 0 24 24" fill="none" '+
          'stroke="currentColor" stroke-width="2" stroke-linecap="round" '+
          'stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
@@ -934,6 +991,10 @@ function aboardBy(port){
   const m = +opt("misc", "aboardBefore");
   return (port.e && m > 0) ? new Date(port.e.getTime() - m*60000) : null;
 }
+
+// the port call an entry sits inside, if any — you are ashore for the length of it
+const portHolding = (x, all) => (all || []).find(y =>
+  y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.e && x.s >= y.s && x.s <= y.e) || null;
 
 function sorted(){
   return trip().legs.slice().map(l => ({l, s:parse(l.start), e:parse(l.end)}))
@@ -1014,7 +1075,7 @@ function render(){
 
   const spans = all.filter(x => isSpan(x, all));
   const spanOf = x => spans.find(s => s.l.id !== x.l.id && encloses(s, x.s)) || null;
-  const portOf = x => all.find(y => y.l.kind === "port" && y.l.id !== x.l.id && y.s && y.e && x.s >= y.s && x.s <= y.e) || null;
+  const portOf = x => portHolding(x, all);
 
   /* ---- focus ---- */
   const aboard = spans.find(s => now >= s.s && now <= s.e);
@@ -1169,10 +1230,8 @@ function render(){
       const before = beforeCue(it.x);
       prevEnd = endOf(it.x) || prevEnd; prevTo = it.x.l.to || it.x.l.place || prevTo; prevLeg = it.x;
       const el = card(it.x, now);
-      const after = afterCue(it.x);
+      const after = afterCue(it.x, all);
       box().appendChild(unitOf(el, before, after, it.port));
-      const fb = fallbackRow(it.x.l);
-      if(fb){ if(it.port) fb.classList.add("nested"); box().appendChild(fb); }
       // back-aboard check for anything ashore during a port call
       if(it.port){
         const by = aboardBy(it.port), ends = it.x.e || it.x.s;
@@ -1226,8 +1285,9 @@ const connMins = (prev, next) =>
 // your planning line in front of an entry, if you've set one
 const targetFor = x => cuesFor(x, "before").filter(z => z.kind === "target" && z.t)[0] || null;
 
-function cueBand(x, side){
-  const list = cuesFor(x, side);
+function cueBand(x, side, extra){
+  const list = cuesFor(x, side).concat(extra || [])
+    .sort((a,b) => (a.t && b.t) ? a.t - b.t : a.t ? -1 : b.t ? 1 : 0);
   if(!list.length) return null;
   const d = document.createElement("div");
   d.className = "cue " + side + (list.some(z => z.kind === "closes") ? " hashard" : "");
@@ -1256,7 +1316,10 @@ function unitOf(card, before, after, nested){
 }
 
 const beforeCue = x => cueBand(x, "before");
-const afterCue  = x => cueBand(x, "after");
+const afterCue  = (x, all) => {
+  const t = all ? turnBackAt(x, all) : null;
+  return cueBand(x, "after", t ? [{c:{label:""}, kind:"turn", side:"after", t:t}] : null);
+};
 
 /* UNFORGIVING = there is no replacement at any price. A ferry ticket names a
    sailing, but another one leaves later — that's the ticket, not the trip. */
@@ -1266,7 +1329,10 @@ const UNFORGIVING = {Flight:1, Cruise:1};
    mode is presumed to be. A presumption never outranks a recorded fact. */
 function unforgiving(x){
   if(onlyOne(x.l)) return true;                                 // you looked: nothing later
-  if(cueList(x).some(z => z.kind === "closes")) return true;    // a turn-back never does
+  // a closing moment in front of it makes the departure itself immovable; one
+  // behind it (all aboard, after the walk back) is a constraint in its own
+  // right and is read as one — the walk is not thereby the last walk on earth
+  if(cueList(x).some(z => z.kind === "closes" && z.side === "before")) return true;
   if(fallbackOf(x.l)) return false;                             // you looked: something later
   return !!opt("hard", x.l.mode, !!UNFORGIVING[x.l.mode]);      // otherwise, the presumption
 }
@@ -1283,12 +1349,18 @@ function unforgiving(x){
 // a moment that cannot move: something withdrawn, or a departure with no replacement
 function constraintAfter(from, all){
   let best = null;
-  const take = (t, label, y) => {
-    if(t && t >= from && (!best || t < best.t)) best = {t:t, label:label, y:y};
+  /* `how` records where on the item the moment sits, which is what tells you
+     whether the item itself is still ahead of you: a departure and a cue in
+     front of it are things you have to reach, a cue behind it is a thing you
+     have to get through. */
+  const take = (t, label, y, how) => {
+    if(t && t >= from && (!best || t < best.t)) best = {t:t, label:label, y:y, how:how};
   };
   all.forEach(y => {
-    cueList(y).forEach(z => { if(z.kind === "closes" && z.t) take(z.t, z.c.label || "it closes", y); });
-    if(y.l.kind === "move" && y.s && unforgiving(y)) take(y.s, titleOf(y), y);
+    cueList(y).forEach(z => {
+      if(z.kind === "closes" && z.t) take(z.t, z.c.label || "it closes", y, z.side === "after" ? "through" : "reach");
+    });
+    if(y.l.kind === "move" && y.s && unforgiving(y)) take(y.s, titleOf(y), y, "reach");
   });
   return best;
 }
@@ -1317,6 +1389,62 @@ function totalFloat(freeAt, all){
   }
   return {at:c, float: mins(c.t - eta)};
 }
+
+/* ===== derived turn-back =============================================
+   A turn-back is the moment you start back regardless of what you haven't
+   seen. It is the constraint minus the way back, so it can be computed
+   rather than placed: all aboard, less the transfers and the journeys that
+   stand between you and the gangway.
+
+   Two rules keep it honest. It is shown only on the last thing you are
+   actually doing ashore — a chain of excursion steps feeds one constraint,
+   so it wants one line, not one per step. And it is shown only when the way
+   back costs something; with nothing recorded between you and the ship it
+   would simply repeat the all-aboard time, which is not information.
+
+   A scheduled departure with no recorded later one caps it: you cannot leave
+   later than the last thing that will carry you, whatever the arithmetic
+   says about the remaining minutes. */
+function turnBackAt(x, all){
+  if(x.l.kind !== "stop") return null;                    // travelling isn't doing
+  const free = x.e;
+  if(!free) return null;
+  const c = constraintAfter(free, all || []);
+  if(!c || !c.t) return null;
+
+  // one line per constraint, on the last thing you're actually doing before it
+  const inWindow = y => {
+    const s = y.s || y.e;
+    return y.l.id !== x.l.id && s && s >= free && s <= c.t;
+  };
+  if((all || []).some(y => y.l.kind === "stop" && y.l.id !== x.l.id && y.e && y.e > free && y.e <= c.t))
+    return null;
+  // a turn-back you placed yourself outranks one worked out from the times
+  if((all || []).some(y => (y.l.id === x.l.id || inWindow(y)) && cueList(y).some(z => z.kind === "turn")))
+    return null;
+
+  let cost = 0, cap = null, prev = x, tail = null;
+  for(const y of (all || [])){
+    if(!inWindow(y)) continue;
+    if(y.l.id === c.y.l.id && c.how !== "through"){ tail = y; break; }
+    cost += connMins(prev, y);
+    if(y.l.kind === "move"){
+      // nothing later will carry you, so the arithmetic stops here
+      if(y.s && cap === null && unforgiving(y)) cap = new Date(y.s.getTime() - cost*60000);
+      if(y.s && y.e) cost += Math.max(0, mins(y.e - y.s));
+    }
+    prev = y;
+  }
+  cost += connMins(prev, tail);
+  let t = new Date(c.t.getTime() - cost*60000);
+  if(cap && cap < t) t = cap;
+  return (mins(c.t - t) >= 1 && t > x.s) ? t : null;
+}
+
+/* a way in for tests: the engine answers questions in plain values, so it can
+   be asked them without going through the screen */
+window.__engine = {get items(){ return sorted(); },
+  turnBackAt, constraintAfter, totalFloat, cueList, connMins, unforgiving, hhmm};
 
 let warnedClose = null;      // one warning per immovable thing, per render
 function judge(x, at, prevEnd, prevTo, all, prevLeg){
@@ -1631,6 +1759,33 @@ function nextDeparture(required, fb){
   return null;
 }
 
+/* The departures behind this one, the way a journey planner shows them: the
+   next, an ellipsis standing for the ones between, and the last that still
+   reaches whatever cannot move. Only ever from what you recorded. */
+function laterDepartures(x, all){
+  const fb = fallbackOf(x.l);
+  if(!fb || !x.s) return null;
+
+  // how far this departure could slip and still make the next constraint
+  const tf = totalFloat(endOf(x) || x.s, all || []);
+  const room = tf ? tf.float : null;
+  const latest = room != null ? new Date(x.s.getTime() + room*60000) : null;
+
+  const out = [];
+  let t = new Date(x.s.getTime() + 60000), guard = 0;
+  while(guard++ < 200){
+    const nd = nextDeparture(t, fb);
+    if(!nd) break;
+    if(fb.last && nd.t > fb.last) break;
+    if(latest && nd.t > latest) break;
+    out.push(nd);
+    if(!fb.every) break;                       // only one recorded departure
+    t = new Date(nd.t.getTime() + 60000);
+  }
+  if(!out.length) return {none:true, latest:latest, at:tf ? tf.at : null};
+  return {list:out, latest:latest, at:tf ? tf.at : null};
+}
+
 /* the view side: an answer from the engine, drawn */
 function row(cls, text){
   const d = document.createElement("div");
@@ -1639,7 +1794,6 @@ function row(cls, text){
   return d;
 }
 const gapRow = v => v ? row("gap " + v.level, v.text) : null;
-const fallbackRow = l => { const t = fallbackText(l); return t ? row("fallback", "↳ " + t) : null; };
 
 function statusChips(l){
   const out = [];
@@ -1696,10 +1850,41 @@ const onItsDay = (l, mode, x) => {
   const when = (mode === "off") ? parse(l.end) : parse(l.start) || parse(l.end);
   return !!(when && dayKey(when) === dayKey(NOW()));
 };
+/* Taking a later departure moves the whole entry, keeping its duration. It is
+   how you record "I'm on the next one" as much as how you re-plan. */
+let shiftId = null;
+function openShift(id, seed){
+  shiftId = id;
+  const e = entryById(id); if(!e) return;
+  const x = sorted().find(z => z.l.id === id) || {l:e.leg, s:parse(e.leg.start), e:parse(e.leg.end)};
+  $("#shiftTitle").textContent = titleOfLeg(e.leg);
+  const r = laterDepartures(x, sorted());
+  const row = $("#shiftRow"); row.innerHTML = "";
+  ((r && r.list) || []).slice(0, 8).forEach(nd => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = hhmm(nd.t) + (nd.est ? "*" : "");
+    b.addEventListener("click", () => { $("#f_shift").value = localISO(nd.t); paintShift(); });
+    row.appendChild(b);
+  });
+  $("#shiftHint").textContent = (r && r.list && r.list.some(z => z.est))
+    ? "* worked out from the cadence you gave, not a departure you looked up" : "";
+  $("#f_shift").value = seed || (r && r.list && r.list[0] ? localISO(r.list[0].t) : "");
+  paintShift();
+  hideAll(); show("#shift");
+}
+function paintShift(){
+  const e = entryById(shiftId); if(!e) return;
+  const was = parse(e.leg.start), now2 = parse($("#f_shift").value);
+  $("#shiftDelta").textContent = (was && now2)
+    ? (now2 > was ? dur(mins(now2 - was)) + " later than planned" : "") : "";
+}
+
 function wireBtns(el, l){
   const e = el.querySelector("[data-edit]"); if(e) e.addEventListener("click", () => openSheet(l.id));
   const t = el.querySelector("[data-tick]");
   if(t) t.addEventListener("click", () => tapTick(l.id, t.dataset.mode || ""));
+  el.querySelectorAll("[data-shift]").forEach(b =>
+    b.addEventListener("click", () => openShift(l.id, b.dataset.shift)));
 }
 
 // "▸ Version A · 6 steps" — the way into a nested day
@@ -1756,8 +1941,8 @@ const endRow = (t, d, cls) =>
 function item(spec){
   const el = document.createElement("div");
   el.className = ["leg"].concat(spec.klass || []).join(" ");
-  let h = '<div class="times"><div class="a">'+(spec.start ? hhmm(spec.start) : "—")+'</div></div>'+
-          '<div class="body">';
+  let h = '<div class="times"><div class="a">'+(spec.start ? hhmm(spec.start) : "—")+'</div>'+
+          (spec.later || "")+'</div><div class="body">';
   if(spec.lead)  h += '<div class="alab">'+esc(spec.lead)+'</div>';
   h += '<div class="route">'+spec.name+'</div>';
   if(spec.chips && spec.chips.length) h += '<div class="meta">'+spec.chips.join("")+'</div>';
@@ -1774,6 +1959,21 @@ function item(spec){
   return el;
 }
 
+/* next … last, small and grey, straight under the departure it falls back to */
+function laterMarks(x, now){
+  const r = laterDepartures(x, sorted());
+  if(!r) return "";
+  if(r.none)                      // the column simply stops: nothing behind this works
+    return '<div class="later none" title="Nothing later gets you there" '+
+           'aria-label="Nothing later gets you there">'+icon("nolater")+'</div>';
+  const l = r.list, mark = nd => '<button type="button" class="lt" data-shift="'+
+    localISO(nd.t)+'">'+hhmm(nd.t)+(nd.est ? "*" : "")+'</button>';
+  let h = mark(l[0]);
+  if(l.length > 2) h += '<div class="el">⋮</div>';
+  if(l.length > 1) h += mark(l[l.length-1]);
+  return '<div class="later">'+h+'</div>';
+}
+
 const linkList = l => (l.links || [])
   .filter(a => a.url && a.url.trim() && !/^(https?:\/\/|message:\/\/)$/.test(a.url.trim()))
   .map(a => '<a href="'+esc(a.url)+'" target="_blank" rel="noopener" title="'+esc(a.label||"Open")+
@@ -1781,7 +1981,7 @@ const linkList = l => (l.links || [])
 /* the label tells you what kind of thing it opens */
 function linkIcon(label){
   const t = (label || "").toLowerCase();
-  if(/wallet|pass|boarding|ticket/.test(t)) return icon("ticket");
+  if(/wallet|pass|boarding|ticket/.test(t)) return icon("tickets");
   if(/map|where|directions/.test(t)) return icon("map");
   if(/mail|email|message|booking|confirm/.test(t)) return icon("doc");
   return icon("open");
@@ -1842,7 +2042,7 @@ function card(x, now){
              .concat(stateClass(l, x, now, !!l.doneAt)),
     name: stop ? esc(l.place || l.mode || "Stop")
                : esc(l.from||"?")+'<span class="ar">→</span>'+esc(l.to||"?"),
-    chips: factChips(l), state: stateChips(l),
+    chips: factChips(l), state: stateChips(l), later: laterMarks(x, now),
     notes: l.notes, links: linkList(l), plans: planChips(l),
     btns: rowBtns(l, "", x), tail: tailFor(x, stop)
   });
@@ -2045,6 +2245,7 @@ function openSheet(id){
   $("#f_service").value = l ? (l.service || "") : "";
   $("#f_ref").value   = l ? (l.ref || "") : "";
   $("#f_notes").value = l ? (l.notes || "") : "";
+  setStep(1);
   $("#linkRows").innerHTML = "";
   ((l && l.links) || []).forEach(a => linkRow(a.label, a.url));
   $("#delBtn").hidden = !l;
@@ -2234,6 +2435,31 @@ $("#pretendSave").addEventListener("click", () => {
 });
 $("#pretendNow").addEventListener("click", () => { hideAll(); backToNow(); });
 
+$("#f_shift").addEventListener("change", paintShift);
+$("#shiftCancel").addEventListener("click", hideAll);
+$("#shiftSave").addEventListener("click", () => {
+  const e = entryById(shiftId); if(!e) return hideAll();
+  const v = $("#f_shift").value, was = parse(e.leg.start), to = parse(v);
+  if(!to){ toast("Pick a departure"); return; }
+  const run = (was && parse(e.leg.end)) ? mins(parse(e.leg.end) - was) : null;
+  e.leg.start = v;
+  if(run != null) e.leg.end = localISO(new Date(to.getTime() + run*60000));
+  save(); hideAll(); render();
+  toast("Moved to " + hhmm(to));
+});
+
+/* Three steps, not a wizard: you can jump straight to the one you want, which
+   is what editing needs. Saving is available from any of them. */
+let step = 1;
+function setStep(n){
+  step = +n || 1;
+  document.querySelectorAll("#stepSeg button").forEach(b => b.classList.toggle("on", +b.dataset.step === step));
+  document.querySelectorAll("#sheet .step").forEach(d => { d.hidden = +d.dataset.step !== step; });
+  const sh = $("#sheet"); if(sh) sh.scrollTop = 0;
+}
+document.querySelectorAll("#stepSeg button").forEach(b =>
+  b.addEventListener("click", () => setStep(b.dataset.step)));
+
 $("#tickSave").addEventListener("click", () => {
   const l = entryById(tickId); if(!l) return hideAll();
   const v = $("#f_doneAt").value;
@@ -2354,9 +2580,10 @@ function addPreset(pre){
 
 function commit(){
   const d = collect();
-  if(d.kind === "move" && !d.from && !d.to){ toast("Add a from or to first"); return false; }
-  if(d.kind !== "move" && !d.place){ toast(d.kind === "port" ? "Name the port first" : "Add a place first"); return false; }
-  if(d.start && d.end && d.end < d.start){ toast("The end time is before the start"); return false; }
+  const stop = (msg, n) => { setStep(n); toast(msg); return false; };
+  if(d.kind === "move" && !d.from && !d.to) return stop("Add a from or to first", 1);
+  if(d.kind !== "move" && !d.place) return stop(d.kind === "port" ? "Name the port first" : "Add a place first", 1);
+  if(d.start && d.end && d.end < d.start) return stop("The end time is before the start", 1);
   if(editing) Object.assign(trip().legs.find(z => z.id === editing), d);
   else trip().legs.push(Object.assign({id:uid()}, d));
   save(); render();
@@ -2420,22 +2647,6 @@ const SETTINGS = [
 
   {sec:"No replacement, by nature", note:"modes where missing it can't be undone at any price"},
   {each:() => MOVE_TYPES, g:"hard", t:"toggle", d:m => !!SEED_FIXED[m], row:"chips"},
-
-  {sec:"Preset times", note:"what the buttons in the cue list fill in"},
-  {g:"preset", k:"there",   d:150, t:"dur", n:"Be there, before departure"},
-  {g:"preset", k:"bag",     d:60,  t:"dur", n:"Bag drop, before departure"},
-  {g:"preset", k:"gate",    d:30,  t:"dur", n:"Gate / all aboard, before departure"},
-  {g:"preset", k:"off",     d:40,  t:"dur", n:"Off and clear, after arrival"},
-  {g:"preset", k:"walk",    d:10,  t:"dur", n:"Walk to it"},
-  {g:"preset", k:"leave",   d:30,  t:"dur", n:"Leave for this, before start"},
-  {g:"preset", k:"getto",   d:15,  t:"dur", n:"Getting there"},
-  {g:"preset", k:"arrive",  d:10,  t:"dur", n:"Be there, before start"},
-  {g:"preset", k:"out",     d:0,   t:"dur", n:"Out by, after end"},
-  {g:"preset", k:"after",   d:10,  t:"dur", n:"Leaving, after end"},
-  {g:"preset", k:"ashore",  d:30,  t:"dur", n:"Ashore by, after docking"},
-  {g:"preset", k:"back",    d:45,  t:"dur", n:"Back at gangway, before sailing"},
-  {g:"preset", k:"shuttle", d:60,  t:"dur", n:"Last shuttle, before sailing"},
-  {g:"preset", k:"tender",  d:30,  t:"dur", n:"Tender queue"},
 
   {sec:"Conversion rates", note:"pounds per unit"},
   {rates:true}
